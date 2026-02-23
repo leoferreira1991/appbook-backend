@@ -29,7 +29,7 @@ class ReadingProgressViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return ReadingProgress.objects.filter(user=self.request.user)
+        return ReadingProgress.objects.filter(user=self.request.user).select_related('book', 'user')
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
@@ -42,7 +42,7 @@ class UserBookViewSet(viewsets.ModelViewSet):
     parser_classes = [parsers.MultiPartParser, parsers.JSONParser, parsers.FormParser]
 
     def get_queryset(self):
-        qs = UserBook.objects.filter(user=self.request.user)
+        qs = UserBook.objects.filter(user=self.request.user).select_related('book', 'book__author')
         status = self.request.query_params.get('status')
         if status:
             qs = qs.filter(status=status)
@@ -62,7 +62,7 @@ class UserBookExternalViewSet(viewsets.ModelViewSet):
     parser_classes = [parsers.MultiPartParser, parsers.JSONParser, parsers.FormParser]
 
     def get_queryset(self):
-        qs = UserBookExternal.objects.filter(user=self.request.user)
+        qs = UserBookExternal.objects.filter(user=self.request.user).select_related('user')
         status = self.request.query_params.get('status')
         if status:
             qs = qs.filter(status=status)

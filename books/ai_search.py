@@ -10,9 +10,9 @@ from concurrent.futures import ThreadPoolExecutor
 
 _SEARCH_SCHEMA = """
 {
-  "intent": "author|publisher|book|general",
-  "canonical_name": "Nombre exacto y canónico del autor/editorial/libro descubierto",
-  "google_books_query": "Consulta perfecta para Google Books (ej: inauthor:\\"Diego Fischer\\" o inpublisher:\\"Planeta\\" o intitle:\\"Harry Potter\\")",
+  "intent": "author|publisher|book|general|isbn",
+  "canonical_name": "Nombre exacto y canónico del autor/editorial/libro/isbn descubierto",
+  "google_books_query": "Consulta perfecta para Google Books (ej: inauthor:\\"Diego Fischer\\" o isbn:\\"9788415594828\\")",
   "reason": "Explicación breve de lo que entendiste"
 }
 """
@@ -22,11 +22,12 @@ def _analyze_search_intent(query: str) -> dict:
     
     system_msg = (
         "Eres un experto bibliotecario. El usuario ingresa un término de búsqueda (puede tener errores). "
-        "Tu trabajo es clasificar la intención (autor, editorial, libro, o general) y construir la "
+        "Tu trabajo es clasificar la intención (author, publisher, book, isbn, o general) y construir la "
         "consulta perfecta (google_books_query) para la API de Google Books. "
         "Por ejemplo, si dice 'Diego Fisher', el canónico es 'Diego Fischer', intent es 'author', "
         "y google_books_query es 'inauthor:\"Diego Fischer\"'. "
         "Si dice 'Planeta', intent es 'publisher' y query es 'inpublisher:\"Planeta\"'. "
+        "Si ingresa un número de 10 a 13 dígitos como '9788415594828', el intent es 'isbn' y el query es 'isbn:9788415594828'. "
         "Devuelve estrictamente JSON válido: " + _SEARCH_SCHEMA
     )
     
@@ -67,6 +68,24 @@ def _fetch_from_google_books(query: str, max_results: int = 15) -> list:
                     cover = cover.replace('http://', 'https://')
                     if 'zoom=' not in cover:
                         cover += '&zoom=1'
+                
+                # Extract ISBN
+                identifiers = vol.get('industryIdentifiers', [])
+                isbn = None
+                for idx in identifiers:
+                    if idx.get('type') in ['ISBN_13', 'ISBN_10']:
+                        isbn = idx.get('identifier')
+                        break
+                        
+                # Extract Categories
+                categories = vol.get('categories', [])
+                categories_str = ", ".join(categories) if categories else None
+                
+                # Pages and Chapters
+                page_count = vol.get('pageCount')
+                total_chapters = 10
+                if page_count and page_count > 0:
+                    total_chapters = max(1, page_count // 10)
                         
                 results.append({
                     'title': vol.get('title', 'Sin título'),
@@ -75,7 +94,13 @@ def _fetch_from_google_books(query: str, max_results: int = 15) -> list:
                     'cover_url': cover,
                     'source': 'google_books',
                     'google_books_id': item.get('id'),
-                    'olid': None # We use google_books_id primarily now
+                    'olid': None, # We use google_books_id primarily now
+                    'publish_date': vol.get('publishedDate'),
+                    'publisher': vol.get('publisher'),
+                    'categories': categories_str,
+                    'isbn': isbn,
+                    'page_count': page_count,
+                    'total_chapters': total_chapters
                 })
     except Exception as e:
         print(f"Google Books API Error: {e}")

@@ -60,7 +60,6 @@ class ReadingChallengeViewSet(viewsets.ModelViewSet):
         # Try finding the book in library using ol_key or title
         if challenge.ol_key:
             UserBookExternal.objects.filter(user=request.user, ol_key=challenge.ol_key).update(current_chapter=challenge.current_chapter)
-            UserBook.objects.filter(user=request.user, ol_key=challenge.ol_key).update(current_chapter=challenge.current_chapter)
         else:
             UserBook.objects.filter(user=request.user, book__title=challenge.book_title).update(current_chapter=challenge.current_chapter)
 
@@ -74,6 +73,33 @@ class ReadingChallengeViewSet(viewsets.ModelViewSet):
         data['new_achievements'] = [a.name for a in new_achievements]
         
         return Response(data)
+
+    @action(detail=True, methods=['post'])
+    def complete(self, request, pk=None):
+        challenge = self.get_object()
+        
+        # Mark challenge as completed
+        challenge.is_completed = True
+        challenge.save()
+        
+        # Sync progress and status with Library
+        from .models import UserBook, UserBookExternal
+        
+        # Mark as read (STATUS_READ is 'read')
+        status_read = 'read'
+        
+        if challenge.ol_key:
+            UserBookExternal.objects.filter(user=request.user, ol_key=challenge.ol_key).update(
+                status=status_read,
+                current_chapter=challenge.total_chapters if challenge.total_chapters > 0 else challenge.current_chapter
+            )
+        else:
+            UserBook.objects.filter(user=request.user, book__title=challenge.book_title).update(
+                status=status_read,
+                current_chapter=challenge.total_chapters if challenge.total_chapters > 0 else challenge.current_chapter
+            )
+            
+        return Response({'status': 'completed', 'message': 'Desafío y libro marcados como completados'})
 
     @action(detail=True, methods=['get'])
     def schedule(self, request, pk=None):

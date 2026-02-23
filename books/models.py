@@ -26,6 +26,13 @@ class Book(models.Model):
     trivia = models.TextField(blank=True, null=True)
     purchase_links = models.JSONField(default=list, blank=True, help_text="List of dictionaries with store name and URL")
     
+    # New detailed info fields
+    publish_date = models.CharField(max_length=50, blank=True, null=True)
+    publisher = models.CharField(max_length=255, blank=True, null=True)
+    categories = models.CharField(max_length=255, blank=True, null=True)
+    isbn = models.CharField(max_length=20, blank=True, null=True)
+    page_count = models.IntegerField(null=True, blank=True)
+    
     def __str__(self):
         return self.title
 
@@ -97,6 +104,13 @@ class UserBookExternal(models.Model):
     current_chapter = models.IntegerField(default=0)
     total_chapters = models.IntegerField(default=0)
     custom_cover = CloudinaryField('cover', blank=True, null=True)
+
+    # New detailed info fields
+    publish_date = models.CharField(max_length=50, blank=True, null=True)
+    publisher = models.CharField(max_length=255, blank=True, null=True)
+    categories = models.CharField(max_length=255, blank=True, null=True)
+    isbn = models.CharField(max_length=20, blank=True, null=True)
+    page_count = models.IntegerField(null=True, blank=True)
 
     class Meta:
         unique_together = ('user', 'ol_key')

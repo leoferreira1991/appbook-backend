@@ -8,7 +8,7 @@ from users.models import User
 import datetime
 
 class ReviewViewSet(viewsets.ModelViewSet):
-    queryset = Review.objects.all().order_by('-created_at')
+    queryset = Review.objects.all().select_related('user').order_by('-created_at')
     serializer_class = ReviewSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
@@ -16,7 +16,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
         serializer.save(user=self.request.user)
 
 class HighlightViewSet(viewsets.ModelViewSet):
-    queryset = Highlight.objects.all().order_by('-created_at')
+    queryset = Highlight.objects.all().select_related('user').order_by('-created_at')
     serializer_class = HighlightSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
@@ -31,20 +31,20 @@ class FeedView(views.APIView):
         following_ids = list(user.following.values_list('id', flat=True))
         
         # 1. Get from Following
-        reviews = Review.objects.filter(user_id__in=following_ids).order_by('-created_at')[:20]
-        highlights = Highlight.objects.filter(user_id__in=following_ids).order_by('-created_at')[:20]
+        reviews = Review.objects.filter(user_id__in=following_ids).select_related('user').order_by('-created_at')[:20]
+        highlights = Highlight.objects.filter(user_id__in=following_ids).select_related('user').order_by('-created_at')[:20]
         
         # 2. Discovery: If feed is low, add global popular/recent items
         if reviews.count() + highlights.count() < 10:
-            global_reviews = Review.objects.exclude(user_id__in=following_ids).exclude(user=user).order_by('-created_at')[:10]
-            global_highlights = Highlight.objects.exclude(user_id__in=following_ids).exclude(user=user).order_by('-created_at')[:10]
+            global_reviews = Review.objects.exclude(user_id__in=following_ids).exclude(user=user).select_related('user').order_by('-created_at')[:10]
+            global_highlights = Highlight.objects.exclude(user_id__in=following_ids).exclude(user=user).select_related('user').order_by('-created_at')[:10]
             reviews = list(reviews) + list(global_reviews)
             highlights = list(highlights) + list(global_highlights)
 
         from books.models import ReadingChallenge
         from books.serializers import ReadingChallengeSerializer
         
-        challenges = ReadingChallenge.objects.filter(user_id__in=following_ids, is_active=True).order_by('-created_at')[:20]
+        challenges = ReadingChallenge.objects.filter(user_id__in=following_ids, is_active=True).select_related('user').order_by('-created_at')[:20]
 
         # Aggregate into a single list
         activities = []
@@ -79,7 +79,7 @@ class FeedView(views.APIView):
         activities.sort(key=lambda x: x['created_at'], reverse=True)
         
         # Return slice
-        result_slice = activities[:40]
+        result_slice = activities[:40] if len(activities) > 40 else activities
         return Response(result_slice)
 
 class FollowUserView(views.APIView):
@@ -103,7 +103,6 @@ class InteractionView(views.APIView):
 
     def post(self, request):
         # Expects: target_type ('review'|'highlight'), target_id, interaction_type ('like'|'comment'), comment_text (optional)
-        from django.contrib.contenttypes.models import ContentType
         target_type = request.data.get('target_type')
         target_id = request.data.get('target_id')
         
