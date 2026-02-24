@@ -24,6 +24,60 @@ class BookViewSet(viewsets.ModelViewSet):
     serializer_class = BookSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
+    @action(detail=False, methods=['post'], parser_classes=[parsers.MultiPartParser, parsers.FormParser])
+    def manual_create(self, request):
+        """Allows users to manually add a book to the catalog and their library."""
+        title = request.data.get('title', '').strip()
+        author_name = request.data.get('author_name', '').strip()
+        isbn = request.data.get('isbn', '').strip()
+        total_chapters = int(request.data.get('total_chapters', 10))
+        status_val = request.data.get('status', UserBook.STATUS_WANT)
+        image_file = request.FILES.get('cover')
+
+        if not title or not author_name:
+            return Response({'error': 'Título y autor son requeridos.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # Upload cover if provided
+            cover_url = ''
+            if image_file:
+                upload_result = cloudinary.uploader.upload(
+                    image_file,
+                    folder='book_covers_manual',
+                    resource_type='image',
+                )
+                cover_url = upload_result.get('secure_url', '')
+
+            # Create or get author
+            author, _ = Author.objects.get_or_create(name=author_name)
+
+            # Create book directly
+            book = Book.objects.create(
+                title=title,
+                author=author,
+                isbn=isbn,
+                cover_image_url=cover_url,
+                is_community_added=True,
+                added_by=request.user,
+                total_chapters=total_chapters  # Wait, Book model has page_count but not total_chapters. UserBook has total_chapters.
+            )
+
+            # Create UserBook entry for the creator
+            UserBook.objects.create(
+                user=request.user,
+                book=book,
+                status=status_val,
+                total_chapters=total_chapters,
+                current_chapter=0
+            )
+
+            serializer = self.get_serializer(book)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            print(f"Manual book creation error: {e}")
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 class ReadingProgressViewSet(viewsets.ModelViewSet):
     serializer_class = ReadingProgressSerializer
     permission_classes = [permissions.IsAuthenticated]

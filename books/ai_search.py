@@ -124,8 +124,35 @@ class AISearchView(APIView):
         intent_type = intent_data.get('intent', 'general')
         canonical = intent_data.get('canonical_name', query)
         
+        # 1.5 Local search in our community catalog
+        from django.db.models import Q
+        from .models import Book
+        local_books_qs = Book.objects.filter(is_community_added=True).filter(
+            Q(title__icontains=canonical) | Q(author__name__icontains=canonical) | Q(isbn=canonical)
+        )[:5]
+        local_results = []
+        for lb in local_books_qs:
+            local_results.append({
+                'title': lb.title,
+                'author': lb.author.name if lb.author else 'Autor desconocido',
+                'description': lb.synopsis or 'Libro agregado por la comunidad.',
+                'cover_url': lb.cover_image_url,
+                'source': 'community',
+                'google_books_id': f"local_{lb.id}",
+                'olid': None,
+                'publish_date': lb.publish_date,
+                'publisher': lb.publisher,
+                'categories': lb.categories,
+                'isbn': lb.isbn,
+                'page_count': lb.page_count,
+                'total_chapters': max(1, lb.page_count // 10) if lb.page_count else 10
+            })
+
         # 2. Fetch real data directly from Google Books
         books = _fetch_from_google_books(gb_query, max_results=15)
+        
+        # Merge results, putting local results first
+        final_results = local_results + books
         
         # Build metadata header
         metadata = {
@@ -134,5 +161,5 @@ class AISearchView(APIView):
             'reason': intent_data.get('reason', '')
         }
         
-        return Response({'metadata': metadata, 'results': books})
+        return Response({'metadata': metadata, 'results': final_results})
 

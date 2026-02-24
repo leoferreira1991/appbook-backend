@@ -32,6 +32,10 @@ class Book(models.Model):
     categories = models.CharField(max_length=255, blank=True, null=True)
     isbn = models.CharField(max_length=20, blank=True, null=True)
     page_count = models.IntegerField(null=True, blank=True)
+
+    # Community catalog
+    is_community_added = models.BooleanField(default=False)
+    added_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='added_books')
     
     def __str__(self):
         return self.title
