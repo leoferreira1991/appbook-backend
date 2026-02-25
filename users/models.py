@@ -4,6 +4,8 @@ from cloudinary.models import CloudinaryField
 
 class User(AbstractUser):
     is_booktoker = models.BooleanField(default=False)
+    is_editorial = models.BooleanField(default=False)
+    is_ai = models.BooleanField(default=False)
     is_premium = models.BooleanField(default=False)
     bio = models.TextField(blank=True, null=True)
     avatar = CloudinaryField('avatar', blank=True, null=True)

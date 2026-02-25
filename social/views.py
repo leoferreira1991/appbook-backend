@@ -2,8 +2,8 @@ from rest_framework import viewsets, permissions, status, views
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from django.contrib.contenttypes.models import ContentType
-from .models import Review, Highlight, SocialInteraction, SocialProfile
-from .serializers import ReviewSerializer, HighlightSerializer, SocialInteractionSerializer, UserCompactSerializer, SocialProfileSerializer
+from .models import Review, Highlight, SocialInteraction, SocialProfile, DirectMessage
+from .serializers import ReviewSerializer, HighlightSerializer, SocialInteractionSerializer, UserCompactSerializer, SocialProfileSerializer, DirectMessageSerializer
 from users.models import User
 import datetime
 
@@ -110,6 +110,9 @@ class InteractionView(views.APIView):
             model = Review
         elif target_type == 'highlight':
             model = Highlight
+        elif target_type == 'reading_progress':
+            from books.models import ReadingProgress
+            model = ReadingProgress
         else:
             return Response({'error': 'Target type inválido'}, status=status.HTTP_400_BAD_REQUEST)
             
@@ -146,3 +149,21 @@ class SocialProfileViewSet(viewsets.ReadOnlyModelViewSet):
         if profile_type:
             queryset = queryset.filter(profile_type=profile_type)
         return queryset
+
+from django.db.models import Q
+
+class DirectMessageViewSet(viewsets.ModelViewSet):
+    serializer_class = DirectMessageSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        # Only return messages where user is sender or receiver
+        user = self.request.user
+        return DirectMessage.objects.filter(Q(sender=user) | Q(receiver=user)).order_by('-created_at')
+
+    def perform_create(self, serializer):
+        # receiver_id is passed in the request data, we assign sender as the current user
+        receiver_id = self.request.data.get('receiver_id')
+        receiver = get_object_or_404(User, id=receiver_id)
+        serializer.save(sender=self.request.user, receiver=receiver)
+

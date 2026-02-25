@@ -1,12 +1,13 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from django.views.decorators.cache import cache_page
-from .views import ReviewViewSet, HighlightViewSet, FeedView, FollowUserView, InteractionView, SocialProfileViewSet
+from .views import ReviewViewSet, HighlightViewSet, FeedView, FollowUserView, InteractionView, SocialProfileViewSet, DirectMessageViewSet
 
 router = DefaultRouter()
-router.register(r'reviews', ReviewViewSet)
-router.register(r'highlights', HighlightViewSet)
-router.register(r'profiles', SocialProfileViewSet)
+router.register(r'reviews', ReviewViewSet, basename='social_reviews')
+router.register(r'highlights', HighlightViewSet, basename='social_highlights')
+router.register(r'profiles', SocialProfileViewSet, basename='social_profiles')
+router.register(r'messages', DirectMessageViewSet, basename='social_messages')
 
 urlpatterns = [
     path('', include(router.urls)),

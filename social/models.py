@@ -74,3 +74,16 @@ class SocialProfile(models.Model):
 
     def __str__(self):
         return f"{self.name} (@{self.handle}) on {self.platform}"
+
+class DirectMessage(models.Model):
+    sender = models.ForeignKey(User, related_name='sent_messages', on_delete=models.CASCADE)
+    receiver = models.ForeignKey(User, related_name='received_messages', on_delete=models.CASCADE)
+    text = models.TextField()
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"From {self.sender.username} to {self.receiver.username} at {self.created_at}"
