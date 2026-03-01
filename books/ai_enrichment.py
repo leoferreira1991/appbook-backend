@@ -88,15 +88,15 @@ def _enrich_book_record(book, enrichment, force=False):
         book.isbn = str(isbn)
         updated = True
     
-    # Page count
+    # Page count — update if not set or default
     page_count = enrichment.get('suggested_page_count')
-    if page_count and isinstance(page_count, int) and (not book.page_count or force):
+    if page_count and isinstance(page_count, int) and (not book.page_count or book.page_count == 0 or force):
         book.page_count = page_count
         updated = True
     
-    # Total chapters
+    # Total chapters — update if default (10) or 0 or not set
     total_chapters = enrichment.get('suggested_total_chapters')
-    if total_chapters and isinstance(total_chapters, int) and (book.total_chapters == 0 or force):
+    if total_chapters and isinstance(total_chapters, int) and (book.total_chapters <= 10 or force):
         book.total_chapters = total_chapters
         updated = True
     
@@ -113,8 +113,34 @@ def _enrich_book_record(book, enrichment, force=False):
     return updated
 
 
+def enrich_single_book(book, force=False):
+    """Enrich a single book using OpenAI. Returns (success, enrichment_data, error).
+    This is the CORE enrichment function used by both individual and bulk endpoints.
+    """
+    try:
+        client = OpenAI(api_key=settings.OPENAI_API_KEY)
+        
+        response = client.chat.completions.create(
+            model='gpt-4o-mini',
+            messages=[
+                {'role': 'system', 'content': SYSTEM_PROMPT},
+                {'role': 'user', 'content': f"Título: {book.title}\nAutor: {book.author}"}
+            ],
+            response_format={'type': 'json_object'},
+            temperature=0.3,
+        )
+        
+        enrichment = json.loads(response.choices[0].message.content)
+        book_updated = _enrich_book_record(book, enrichment, force=force)
+        
+        return True, enrichment, None
+    except Exception as e:
+        print(f"AI Enrichment Error for '{book.title}': {e}")
+        return False, None, str(e)
+
+
 class AIEnrichmentView(APIView):
-    """Enrich book data using OpenAI: genre, synopsis, trivia, author bio, and more."""
+    """Enrich a single book using OpenAI."""
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
@@ -126,9 +152,22 @@ class AIEnrichmentView(APIView):
         if not title:
             return Response({'error': 'Title is required'}, status=400)
         
+        # If book_id is provided, use the core function directly
+        if book_id:
+            from .models import UserBookExternal
+            try:
+                book = UserBookExternal.objects.get(id=int(book_id), user=request.user)
+                success, enrichment, error = enrich_single_book(book, force=force)
+                if success:
+                    return Response({'enrichment': enrichment, 'updated': True})
+                else:
+                    return Response({'error': error}, status=500)
+            except UserBookExternal.DoesNotExist:
+                return Response({'error': f'Book {book_id} not found'}, status=404)
+        
+        # No book_id — just call OpenAI and return results without saving
         try:
             client = OpenAI(api_key=settings.OPENAI_API_KEY)
-            
             response = client.chat.completions.create(
                 model='gpt-4o-mini',
                 messages=[
@@ -138,31 +177,14 @@ class AIEnrichmentView(APIView):
                 response_format={'type': 'json_object'},
                 temperature=0.3,
             )
-            
             enrichment = json.loads(response.choices[0].message.content)
-            
-            # Auto-update the book in the user's library
-            book_updated = False
-            if book_id:
-                from .models import UserBookExternal
-                try:
-                    book = UserBookExternal.objects.get(id=book_id, user=request.user)
-                    book_updated = _enrich_book_record(book, enrichment, force=force)
-                except UserBookExternal.DoesNotExist:
-                    pass
-            
-            return Response({
-                'enrichment': enrichment,
-                'updated': book_updated,
-            })
-            
+            return Response({'enrichment': enrichment, 'updated': False})
         except Exception as e:
-            print(f"AI Enrichment Error: {e}")
             return Response({'error': str(e)}, status=500)
 
 
 class AIEnrichAllView(APIView):
-    """Enrich ALL books in user's library that haven't been enriched yet."""
+    """Enrich ALL books using the EXACT same logic as individual enrichment."""
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
@@ -170,47 +192,42 @@ class AIEnrichAllView(APIView):
         
         force = request.data.get('force', False)
         
+        # Get books that need enrichment: ai_enriched is False OR NULL
         if force:
-            books = UserBookExternal.objects.filter(user=request.user)
+            books = list(UserBookExternal.objects.filter(user=request.user))
         else:
-            books = UserBookExternal.objects.filter(user=request.user, ai_enriched=False)
+            # Include both False AND NULL (books added before ai_enriched field existed)
+            from django.db.models import Q
+            books = list(UserBookExternal.objects.filter(
+                Q(ai_enriched=False) | Q(ai_enriched__isnull=True),
+                user=request.user
+            ))
         
-        total = books.count()
+        total = len(books)
         if total == 0:
-            return Response({'message': 'Todos tus libros ya están enriquecidos.', 'enriched': 0})
-        
-        try:
-            client = OpenAI(api_key=settings.OPENAI_API_KEY)
-            enriched_count = 0
-            errors = []
-            
-            for book in books:
-                try:
-                    response = client.chat.completions.create(
-                        model='gpt-4o-mini',
-                        messages=[
-                            {'role': 'system', 'content': SYSTEM_PROMPT},
-                            {'role': 'user', 'content': f"Título: {book.title}\nAutor: {book.author}"}
-                        ],
-                        response_format={'type': 'json_object'},
-                        temperature=0.3,
-                    )
-                    
-                    enrichment = json.loads(response.choices[0].message.content)
-                    if _enrich_book_record(book, enrichment, force=force):
-                        enriched_count += 1
-                except Exception as e:
-                    errors.append(f"{book.title}: {str(e)}")
-            
             return Response({
-                'message': f'Se enriquecieron {enriched_count} de {total} libros.',
-                'enriched': enriched_count,
-                'total': total,
-                'errors': errors[:5],  # Only show first 5 errors
+                'message': '¡Todos tus libros ya están enriquecidos! 🎉',
+                'enriched': 0,
+                'total': 0,
             })
-            
-        except Exception as e:
-            return Response({'error': str(e)}, status=500)
+        
+        enriched_count = 0
+        errors = []
+        
+        # Use the SAME enrich_single_book function for each book
+        for book in books:
+            success, enrichment, error = enrich_single_book(book, force=force)
+            if success:
+                enriched_count += 1
+            else:
+                errors.append(f"{book.title}: {error}")
+        
+        return Response({
+            'message': f'Se enriquecieron {enriched_count} de {total} libros.',
+            'enriched': enriched_count,
+            'total': total,
+            'errors': errors[:5],
+        })
 
 
 class AIReviewView(APIView):

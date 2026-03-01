@@ -140,7 +140,6 @@ class UserBookExternalViewSet(viewsets.ModelViewSet):
                 print(f"Success: {'Created' if created else 'Updated'} {obj}")
             else:
                 obj = serializer.save(user=self.request.user)
-                # Ensure the instance is attached for serialization
                 serializer.instance = obj
                 print(f"Success: Saved new {obj}")
             
@@ -155,6 +154,19 @@ class UserBookExternalViewSet(viewsets.ModelViewSet):
                     updated_fields.append('current_page')
                 if updated_fields:
                     obj.save(update_fields=updated_fields)
+            
+            # Auto-enrich with AI in background thread
+            import threading
+            def _bg_enrich(book_id):
+                try:
+                    from .ai_enrichment import enrich_single_book
+                    book = UserBookExternal.objects.get(id=book_id)
+                    success, _, error = enrich_single_book(book)
+                    print(f"Auto-enrich {'OK' if success else 'FAIL'}: {book.title} {error or ''}")
+                except Exception as e:
+                    print(f"Auto-enrich error: {e}")
+            
+            threading.Thread(target=_bg_enrich, args=(obj.id,), daemon=True).start()
             
         except Exception as e:
             print(f"ERROR adding book: {str(e)}")
