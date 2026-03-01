@@ -6,11 +6,36 @@ from django.core.mail import send_mail
 from django.conf import settings
 import cloudinary.uploader
 
+from .models import BugReport
+
 
 class BugReportView(APIView):
-    """Submit bug reports with optional screenshot. Sends email notification."""
+    """Submit and list bug reports. Sends email notification and saves to DB."""
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
+
+    def get(self, request):
+        """List bug reports (filterable by date)."""
+        reports = BugReport.objects.filter(user=request.user)
+        
+        # Optional date filters
+        from_date = request.query_params.get('from')
+        to_date = request.query_params.get('to')
+        if from_date:
+            reports = reports.filter(created_at__gte=from_date)
+        if to_date:
+            reports = reports.filter(created_at__lte=to_date)
+        
+        data = [{
+            'id': r.id,
+            'description': r.description,
+            'category': r.category,
+            'screenshot_url': r.screenshot_url,
+            'created_at': r.created_at.isoformat(),
+            'resolved': r.resolved,
+        } for r in reports[:50]]
+        
+        return Response({'reports': data, 'total': reports.count()})
 
     def post(self, request):
         description = request.data.get('description', '').strip()
@@ -33,6 +58,14 @@ class BugReportView(APIView):
             except Exception as e:
                 print(f"Screenshot upload error: {e}")
         
+        # Save to database
+        report = BugReport.objects.create(
+            user=request.user,
+            description=description,
+            category=category,
+            screenshot_url=screenshot_url,
+        )
+        
         # Build email content
         user = request.user
         subject = f'[AppBook Bug Report] {category.upper()} - de {user.username}'
@@ -42,6 +75,7 @@ class BugReportView(APIView):
             f"{'='*50}\n\n"
             f"📋 Categoría: {category}\n"
             f"👤 Usuario: {user.username} ({user.email})\n"
+            f"🆔 Report ID: {report.id}\n"
             f"📱 Descripción:\n{description}\n\n"
         )
         
@@ -66,6 +100,7 @@ class BugReportView(APIView):
         
         return Response({
             'success': True,
+            'report_id': report.id,
             'email_sent': email_sent,
             'screenshot_url': screenshot_url,
             'message': '¡Gracias! Tu reporte fue enviado.' if email_sent else 'Reporte guardado pero hubo un error al enviar el email.',

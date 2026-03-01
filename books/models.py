@@ -110,18 +110,43 @@ class UserBookExternal(models.Model):
     current_page = models.IntegerField(default=0)
     custom_cover = CloudinaryField('cover', blank=True, null=True)
 
-    # New detailed info fields
+    # Book metadata
     publish_date = models.CharField(max_length=50, blank=True, null=True)
     publisher = models.CharField(max_length=255, blank=True, null=True)
     categories = models.CharField(max_length=255, blank=True, null=True)
     isbn = models.CharField(max_length=20, blank=True, null=True)
     page_count = models.IntegerField(null=True, blank=True)
 
+    # AI-enriched fields
+    synopsis = models.TextField(blank=True, null=True, help_text="AI-generated synopsis")
+    author_bio = models.TextField(blank=True, null=True, help_text="AI-generated author biography")
+    trivia = models.TextField(blank=True, null=True, help_text="AI-generated fun fact")
+    ai_review = models.TextField(blank=True, null=True, help_text="AI-generated review")
+    themes = models.CharField(max_length=500, blank=True, null=True, help_text="Comma-separated themes")
+    year_published = models.CharField(max_length=10, blank=True, null=True)
+    ai_enriched = models.BooleanField(default=False, help_text="Whether AI enrichment has been applied")
+
     class Meta:
         unique_together = ('user', 'ol_key')
 
     def __str__(self):
         return f'{self.user.username} - {self.title} ({self.status})'
+
+
+class BugReport(models.Model):
+    """Store bug reports in DB for querying."""
+    user = models.ForeignKey(User, related_name='bug_reports', on_delete=models.CASCADE)
+    description = models.TextField()
+    category = models.CharField(max_length=50, default='general')
+    screenshot_url = models.URLField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    resolved = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'[{self.category}] {self.user.username} - {self.created_at.strftime("%Y-%m-%d")}'
 
 
 class BookCoverContribution(models.Model):
