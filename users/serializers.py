@@ -4,11 +4,12 @@ from .models import User
 class UserSerializer(serializers.ModelSerializer):
     avatar_url = serializers.SerializerMethodField()
     avatar = serializers.ImageField(required=False, allow_null=True)
+    following = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
 
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'first_name', 'is_booktoker', 'is_premium', 'bio', 'avatar', 'avatar_url', 'social_links', 'favorite_authors', 'favorite_publishers')
-        read_only_fields = ('username', 'email', 'is_premium')
+        fields = ('id', 'username', 'email', 'first_name', 'is_booktoker', 'is_premium', 'bio', 'avatar', 'avatar_url', 'social_links', 'favorite_authors', 'favorite_publishers', 'xp', 'level', 'following')
+        read_only_fields = ('username', 'email', 'is_premium', 'xp', 'level', 'following')
 
     def get_avatar_url(self, obj):
         if obj.avatar:
