@@ -48,7 +48,16 @@ class StatsSummaryView(views.APIView):
             streak += 1
             current_date -= timedelta(days=1)
 
-        # 3. Level Progress
+        # 3. Level Progress — ensure level-up is applied
+        # If XP exceeds threshold, level up (handles missed level-ups)
+        leveled_changed = False
+        while user.xp >= get_level_threshold(user.level):
+            user.xp -= get_level_threshold(user.level)
+            user.level += 1
+            leveled_changed = True
+        if leveled_changed:
+            user.save()
+        
         next_level_xp = get_level_threshold(user.level)
         xp_progress = (user.xp / next_level_xp) if next_level_xp > 0 else 0
         
