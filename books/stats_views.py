@@ -3,7 +3,6 @@ from rest_framework.response import Response
 from django.db.models import Sum, Count
 from .models import ReadingChallenge, DailyReadingLog, UserBook, UserBookExternal
 from users.models import UserAchievement
-from users.achievement_checker import check_achievements
 from django.utils import timezone
 from datetime import timedelta
 from .stats_utils import get_level_threshold
@@ -16,6 +15,7 @@ class StatsSummaryView(views.APIView):
         
         # Auto-check and award achievements
         try:
+            from users.achievement_checker import check_achievements
             check_achievements(user)
         except Exception as e:
             print(f"Achievement check error: {e}")
