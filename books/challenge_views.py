@@ -55,13 +55,23 @@ class ReadingChallengeViewSet(viewsets.ModelViewSet):
         xp_earned = calculate_xp_for_reading(pages=pages_read, chapters=chapters_read)
         leveled_up, new_level = add_xp_to_user(request.user, xp_earned)
         
-        # Sync progress with Library
+        # Sync progress with Library (bidirectional: chapters + pages)
         from .models import UserBook, UserBookExternal
-        # Try finding the book in library using ol_key or title
-        if challenge.ol_key:
-            UserBookExternal.objects.filter(user=request.user, ol_key=challenge.ol_key).update(current_chapter=challenge.current_chapter)
-        else:
-            UserBook.objects.filter(user=request.user, book__title=challenge.book_title).update(current_chapter=challenge.current_chapter)
+        sync_data = {}
+        if challenge.current_chapter > 0:
+            sync_data['current_chapter'] = challenge.current_chapter
+        if challenge.current_page > 0:
+            sync_data['current_page'] = challenge.current_page
+        
+        if sync_data:
+            if challenge.ol_key:
+                UserBookExternal.objects.filter(user=request.user, ol_key=challenge.ol_key).update(**sync_data)
+            else:
+                if 'current_page' in sync_data:
+                    # UserBook doesn't have current_page, so remove it
+                    sync_data.pop('current_page', None)
+                if sync_data:
+                    UserBook.objects.filter(user=request.user, book__title=challenge.book_title).update(**sync_data)
 
         # Check for achievements
         new_achievements = check_reading_achievements(request.user, log)
@@ -91,12 +101,13 @@ class ReadingChallengeViewSet(viewsets.ModelViewSet):
         if challenge.ol_key:
             UserBookExternal.objects.filter(user=request.user, ol_key=challenge.ol_key).update(
                 status=status_read,
-                current_chapter=challenge.total_chapters if challenge.total_chapters > 0 else challenge.current_chapter
+                current_chapter=challenge.total_chapters if challenge.total_chapters > 0 else challenge.current_chapter,
+                current_page=challenge.total_pages if challenge.total_pages > 0 else challenge.current_page,
             )
         else:
             UserBook.objects.filter(user=request.user, book__title=challenge.book_title).update(
                 status=status_read,
-                current_chapter=challenge.total_chapters if challenge.total_chapters > 0 else challenge.current_chapter
+                current_chapter=challenge.total_chapters if challenge.total_chapters > 0 else challenge.current_chapter,
             )
             
         return Response({'status': 'completed', 'message': 'Desafío y libro marcados como completados'})

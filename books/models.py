@@ -107,6 +107,7 @@ class UserBookExternal(models.Model):
     chapter_notes = models.JSONField(default=list, blank=True, help_text="List of {chapter, note, created_at} dicts")
     current_chapter = models.IntegerField(default=0)
     total_chapters = models.IntegerField(default=0)
+    current_page = models.IntegerField(default=0)
     custom_cover = CloudinaryField('cover', blank=True, null=True)
 
     # New detailed info fields

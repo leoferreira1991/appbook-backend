@@ -23,7 +23,9 @@ class StatsSummaryView(views.APIView):
         chapters_from_ext = UserBookExternal.objects.filter(user=user).aggregate(Sum('current_chapter'))['current_chapter__sum'] or 0
         total_chapters = chapters_from_books + chapters_from_ext
         
-        books_finished = UserBook.objects.filter(user=user, status='read').count()
+        books_finished_internal = UserBook.objects.filter(user=user, status='read').count()
+        books_finished_external = UserBookExternal.objects.filter(user=user, status='read').count()
+        books_finished = books_finished_internal + books_finished_external
         
         # 2. Streak Calculation (Simplistic)
         today = timezone.now().date()
