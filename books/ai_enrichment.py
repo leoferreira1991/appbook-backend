@@ -188,46 +188,57 @@ class AIEnrichAllView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        from .models import UserBookExternal
-        
-        force = request.data.get('force', False)
-        
-        # Get books that need enrichment: ai_enriched is False OR NULL
-        if force:
-            books = list(UserBookExternal.objects.filter(user=request.user))
-        else:
-            # Include both False AND NULL (books added before ai_enriched field existed)
-            from django.db.models import Q
-            books = list(UserBookExternal.objects.filter(
-                Q(ai_enriched=False) | Q(ai_enriched__isnull=True),
-                user=request.user
-            ))
-        
-        total = len(books)
-        if total == 0:
-            return Response({
-                'message': '¡Todos tus libros ya están enriquecidos! 🎉',
-                'enriched': 0,
-                'total': 0,
-            })
-        
-        enriched_count = 0
-        errors = []
-        
-        # Use the SAME enrich_single_book function for each book
-        for book in books:
-            success, enrichment, error = enrich_single_book(book, force=force)
-            if success:
-                enriched_count += 1
+        import traceback
+        try:
+            from .models import UserBookExternal
+            
+            force = request.data.get('force', False)
+            
+            # Get books that need enrichment: ai_enriched is False OR NULL
+            if force:
+                books = list(UserBookExternal.objects.filter(user=request.user))
             else:
-                errors.append(f"{book.title}: {error}")
-        
-        return Response({
-            'message': f'Se enriquecieron {enriched_count} de {total} libros.',
-            'enriched': enriched_count,
-            'total': total,
-            'errors': errors[:5],
-        })
+                # Include both False AND NULL (books added before ai_enriched field existed)
+                from django.db.models import Q
+                books = list(UserBookExternal.objects.filter(
+                    Q(ai_enriched=False) | Q(ai_enriched__isnull=True),
+                    user=request.user
+                ))
+            
+            total = len(books)
+            if total == 0:
+                return Response({
+                    'message': '¡Todos tus libros ya están enriquecidos! 🎉',
+                    'enriched': 0,
+                    'total': 0,
+                })
+            
+            enriched_count = 0
+            errors = []
+            
+            # Use the SAME enrich_single_book function for each book
+            for book in books:
+                try:
+                    success, enrichment, error = enrich_single_book(book, force=force)
+                    if success:
+                        enriched_count += 1
+                    else:
+                        errors.append(f"{book.title}: {error}")
+                except Exception as book_err:
+                    errors.append(f"{book.title}: {str(book_err)}")
+            
+            return Response({
+                'message': f'Se enriquecieron {enriched_count} de {total} libros.',
+                'enriched': enriched_count,
+                'total': total,
+                'errors': errors[:5],
+            })
+        except Exception as e:
+            print(f"AIEnrichAllView ERROR: {traceback.format_exc()}")
+            return Response({
+                'error': f'Error interno: {str(e)}',
+                'detail': traceback.format_exc()[-500:],
+            }, status=500)
 
 
 class AIReviewView(APIView):
