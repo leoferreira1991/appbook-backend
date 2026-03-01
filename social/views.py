@@ -16,9 +16,18 @@ class ReviewViewSet(viewsets.ModelViewSet):
         serializer.save(user=self.request.user)
 
 class HighlightViewSet(viewsets.ModelViewSet):
-    queryset = Highlight.objects.all().select_related('user').order_by('-created_at')
     serializer_class = HighlightSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get_queryset(self):
+        queryset = Highlight.objects.all().select_related('user').order_by('-created_at')
+        book_id = self.request.query_params.get('book')
+        ol_key = self.request.query_params.get('ol_key')
+        if book_id:
+            queryset = queryset.filter(book_id=book_id)
+        elif ol_key:
+            queryset = queryset.filter(ol_key=ol_key)
+        return queryset
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)

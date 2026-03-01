@@ -11,7 +11,7 @@ router.register(r'messages', DirectMessageViewSet, basename='social_messages')
 
 urlpatterns = [
     path('', include(router.urls)),
-    path('feed/', cache_page(60 * 5)(FeedView.as_view()), name='social-feed'),
+    path('feed/', FeedView.as_view(), name='social-feed'),
     path('follow/<int:user_id>/', FollowUserView.as_view(), name='follow-user'),
     path('interact/', InteractionView.as_view(), name='social-interact'),
 ]
