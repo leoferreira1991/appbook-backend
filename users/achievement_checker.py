@@ -1,10 +1,11 @@
 """Auto-check and award achievements based on user activity."""
 from users.models import Achievement, UserAchievement
-from books.models import UserBookExternal
 
 
 def check_achievements(user):
     """Check all achievements for a user and award any newly earned ones."""
+    from books.models import UserBookExternal, ReadingChallenge
+    
     awarded = []
     
     # Get user's book stats
@@ -33,50 +34,18 @@ def check_achievements(user):
     max_genre_count = max(genre_counts.values()) if genre_counts else 0
     
     # Book count achievements
-    book_checks = [
+    all_checks = [
         ('first_book', total_books >= 1),
         ('five_books', total_books >= 5),
         ('ten_books', total_books >= 10),
         ('twenty_books', total_books >= 20),
-    ]
-    
-    # Read count achievements
-    read_checks = [
         ('first_read', read_books >= 1),
         ('five_read', read_books >= 5),
         ('ten_read', read_books >= 10),
-    ]
-    
-    # Genre achievements
-    genre_checks = [
         ('diverse_reader', len(genres) >= 3),
         ('genre_master', max_genre_count >= 5),
+        ('first_challenge', ReadingChallenge.objects.filter(user=user).exists()),
     ]
-    
-    # Highlight check
-    from books.models import BookHighlight
-    has_highlight = BookHighlight.objects.filter(
-        book__user=user
-    ).exists() if hasattr(UserBookExternal, 'highlights') else False
-    # Fallback: check if BookHighlight has any for user's books
-    try:
-        book_ids = UserBookExternal.objects.filter(user=user).values_list('id', flat=True)
-        has_highlight = BookHighlight.objects.filter(book_id__in=book_ids).exists()
-    except Exception:
-        has_highlight = False
-    
-    highlight_checks = [
-        ('first_highlight', has_highlight),
-    ]
-    
-    # Challenge check
-    from books.models import ReadingChallenge
-    has_challenge = ReadingChallenge.objects.filter(user=user).exists()
-    challenge_checks = [
-        ('first_challenge', has_challenge),
-    ]
-    
-    all_checks = book_checks + read_checks + genre_checks + highlight_checks + challenge_checks
     
     for code, condition in all_checks:
         if condition:
@@ -86,7 +55,6 @@ def check_achievements(user):
                     user=user, achievement=achievement
                 )
                 if created:
-                    # Award XP
                     user.xp = (user.xp or 0) + achievement.xp_reward
                     user.save(update_fields=['xp'])
                     awarded.append({
