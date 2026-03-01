@@ -23,17 +23,19 @@ router.register(r'challenges', ReadingChallengeViewSet, basename='readingchallen
 router.register(r'suggest-similar', SuggestSimilarView, basename='suggestsimilar')
 
 urlpatterns = [
-    path('', include(router.urls)),
+    # Explicit paths MUST come before router.urls so they take priority
+    # (otherwise router's 'authors/' pattern intercepts 'authors/auto-merge/' and returns 405)
+    path('authors/dedup/', AuthorDedupView.as_view(), name='author-dedup'),
+    path('authors/auto-merge/', AutoMergeAuthorsView.as_view(), name='author-auto-merge'),
     path('recommendations/', BookRecommendationsView.as_view(), name='book-recommendations'),
     path('stats/summary/', StatsSummaryView.as_view(), name='stats-summary'),
     path('ai-search/', AISearchView.as_view(), name='ai-search'),
     path('ai-enrich/', AIEnrichmentView.as_view(), name='ai-enrich'),
     path('ai-enrich-all/', AIEnrichAllView.as_view(), name='ai-enrich-all'),
     path('ai-review/', AIReviewView.as_view(), name='ai-review'),
-    path('authors/dedup/', AuthorDedupView.as_view(), name='author-dedup'),
-    path('authors/auto-merge/', AutoMergeAuthorsView.as_view(), name='author-auto-merge'),
     path('bug-report/', BugReportView.as_view(), name='bug-report'),
     path('admin-reports/', AdminBugReportsView.as_view(), name='admin-reports'),
     path('ai-status/', AIStatusView.as_view(), name='ai-status'),
     path('public-library/<int:user_id>/', PublicLibraryView.as_view(), name='public-library'),
+    path('', include(router.urls)),
 ]
