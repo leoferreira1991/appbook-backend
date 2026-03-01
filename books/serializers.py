@@ -47,7 +47,7 @@ class UserBookSerializer(serializers.ModelSerializer):
             if request is not None and url.startswith('/'):
                 return request.build_absolute_uri(url)
             elif url.startswith('/'):
-                return f"http://192.168.1.33:8000{url}"
+                return url
             return url
         return obj.book.cover_image_url
 
@@ -68,7 +68,7 @@ class UserBookExternalSerializer(serializers.ModelSerializer):
             if request is not None and url.startswith('/'):
                 return request.build_absolute_uri(url)
             elif url.startswith('/'):
-                return f"http://192.168.1.33:8000{url}"
+                return url
             return url
         return obj.cover_url
 
@@ -106,8 +106,6 @@ class ReadingChallengeSerializer(serializers.ModelSerializer):
             if request is not None and url.startswith('/'):
                 return request.build_absolute_uri(url)
             elif url.startswith('/'):
-                # Fallback purely for Django environments without request context
-                # Change to actual production domain later.
-                return f"http://192.168.1.33:8000{url}"
+                return url
             return url
         return obj.cover_url
