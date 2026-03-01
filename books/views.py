@@ -143,6 +143,19 @@ class UserBookExternalViewSet(viewsets.ModelViewSet):
                 # Ensure the instance is attached for serialization
                 serializer.instance = obj
                 print(f"Success: Saved new {obj}")
+            
+            # Auto-complete progress for books marked as 'read'
+            if obj.status == 'read':
+                updated_fields = []
+                if obj.current_chapter < obj.total_chapters:
+                    obj.current_chapter = obj.total_chapters
+                    updated_fields.append('current_chapter')
+                if obj.page_count and (obj.current_page or 0) < obj.page_count:
+                    obj.current_page = obj.page_count
+                    updated_fields.append('current_page')
+                if updated_fields:
+                    obj.save(update_fields=updated_fields)
+            
         except Exception as e:
             print(f"ERROR adding book: {str(e)}")
             raise e
