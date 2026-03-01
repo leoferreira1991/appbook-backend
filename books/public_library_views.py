@@ -15,15 +15,13 @@ class PublicLibraryView(APIView):
         except User.DoesNotExist:
             return Response({'error': 'User not found'}, status=404)
 
-        # Get books from both models that are read or want_to_read
+        # Get books from both models — all statuses
         internal_books = UserBook.objects.filter(
             user=target_user,
-            status__in=[UserBook.STATUS_READ, UserBook.STATUS_WANT]
         ).select_related('book', 'book__author')
 
         external_books = UserBookExternal.objects.filter(
             user=target_user,
-            status__in=[UserBookExternal.STATUS_READ, UserBookExternal.STATUS_WANT]
         )
 
         library = []

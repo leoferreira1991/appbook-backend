@@ -9,7 +9,7 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('id', 'username', 'email', 'first_name', 'is_booktoker', 'is_premium', 'bio', 'avatar', 'avatar_url', 'social_links', 'favorite_authors', 'favorite_publishers', 'xp', 'level', 'following')
-        read_only_fields = ('username', 'email', 'is_premium', 'xp', 'level', 'following')
+        read_only_fields = ('username', 'email', 'xp', 'level', 'following')
 
     def get_avatar_url(self, obj):
         if obj.avatar:
