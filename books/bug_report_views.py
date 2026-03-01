@@ -5,6 +5,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from django.core.mail import send_mail
 from django.conf import settings
 import cloudinary.uploader
+import os
 
 from .models import BugReport
 
@@ -104,4 +105,53 @@ class BugReportView(APIView):
             'email_sent': email_sent,
             'screenshot_url': screenshot_url,
             'message': '¡Gracias! Tu reporte fue enviado.' if email_sent else 'Reporte guardado pero hubo un error al enviar el email.',
+        })
+
+
+class AdminBugReportsView(APIView):
+    """List all bug reports using a secret admin key (no auth required)."""
+    permission_classes = []
+    
+    def get(self, request):
+        key = request.query_params.get('key', '')
+        if key != 'appbook-admin-2026':
+            return Response({'error': 'Invalid key'}, status=403)
+        
+        reports = BugReport.objects.all().order_by('-created_at')
+        
+        from_date = request.query_params.get('from')
+        to_date = request.query_params.get('to')
+        if from_date:
+            reports = reports.filter(created_at__gte=from_date)
+        if to_date:
+            reports = reports.filter(created_at__lte=to_date)
+        
+        data = [{
+            'id': r.id,
+            'user': r.user.username,
+            'description': r.description,
+            'category': r.category,
+            'screenshot_url': r.screenshot_url,
+            'created_at': r.created_at.isoformat(),
+            'resolved': r.resolved,
+        } for r in reports[:50]]
+        
+        return Response({'reports': data, 'total': reports.count()})
+
+
+class AIStatusView(APIView):
+    """Check if AI services are properly configured."""
+    permission_classes = []
+    
+    def get(self, request):
+        key = request.query_params.get('key', '')
+        if key != 'appbook-admin-2026':
+            return Response({'error': 'Invalid key'}, status=403)
+        
+        openai_key = settings.OPENAI_API_KEY
+        return Response({
+            'openai_configured': bool(openai_key and len(openai_key) > 5),
+            'openai_key_prefix': openai_key[:8] + '...' if openai_key and len(openai_key) > 8 else '(not set)',
+            'email_configured': bool(settings.EMAIL_HOST_PASSWORD),
+            'cloudinary_configured': bool(os.environ.get('CLOUDINARY_CLOUD_NAME')),
         })
