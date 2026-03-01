@@ -186,3 +186,13 @@ OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
 
 # Google Books API — for richer search results
 GOOGLE_BOOKS_API_KEY = os.environ.get('GOOGLE_BOOKS_API_KEY', 'AIzaSyCwvilgM-nNax0xGp1lQWgP9JD65STzyJU')
+
+# ─── Email Configuration (Bug Reports) ──────────────────────────────────────
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', 'cr.leonardo.ferreira@gmail.com')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')  # Gmail App Password
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'AppBook <cr.leonardo.ferreira@gmail.com>')
+BUG_REPORT_EMAIL = os.environ.get('BUG_REPORT_EMAIL', 'cr.leonardo.ferreira@gmail.com')
