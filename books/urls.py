@@ -6,6 +6,8 @@ from .suggest_similar import SuggestSimilarView
 from .challenge_views import ReadingChallengeViewSet
 from .stats_views import StatsSummaryView
 from .ai_search import AISearchView
+from .ai_enrichment import AIEnrichmentView, AIReviewView
+from .author_dedup import AuthorDedupView, AutoMergeAuthorsView
 from .public_library_views import PublicLibraryView
 
 router = DefaultRouter()
@@ -24,5 +26,10 @@ urlpatterns = [
     path('recommendations/', BookRecommendationsView.as_view(), name='book-recommendations'),
     path('stats/summary/', StatsSummaryView.as_view(), name='stats-summary'),
     path('ai-search/', AISearchView.as_view(), name='ai-search'),
+    path('ai-enrich/', AIEnrichmentView.as_view(), name='ai-enrich'),
+    path('ai-review/', AIReviewView.as_view(), name='ai-review'),
+    path('authors/dedup/', AuthorDedupView.as_view(), name='author-dedup'),
+    path('authors/auto-merge/', AutoMergeAuthorsView.as_view(), name='author-auto-merge'),
     path('public-library/<int:user_id>/', PublicLibraryView.as_view(), name='public-library'),
 ]
+

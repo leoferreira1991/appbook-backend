@@ -56,13 +56,25 @@ class StatsSummaryView(views.APIView):
             } for ua in earned
         ]
 
-        # 5. Genre breakdown (from finished books if we had genres, let's mock for now)
-        genres = {
-            'Fantasía': 45,
-            'Romance': 25,
-            'Ciencia Ficción': 15,
-            'Otros': 15
-        }
+        # 5. Genre breakdown from real data
+        genres = {}
+        books_with_cats = UserBookExternal.objects.filter(user=user).exclude(
+            categories__isnull=True
+        ).exclude(categories='').values_list('categories', flat=True)
+        
+        all_genres = []
+        for cats in books_with_cats:
+            for cat in cats.split(','):
+                cat = cat.strip()
+                if cat:
+                    all_genres.append(cat)
+        
+        total_genre_count = len(all_genres)
+        if total_genre_count > 0:
+            from collections import Counter
+            genre_counts = Counter(all_genres)
+            for genre, count in genre_counts.most_common(6):
+                genres[genre] = round((count / total_genre_count) * 100)
 
         return Response({
             'user': {
