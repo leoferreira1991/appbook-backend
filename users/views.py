@@ -82,3 +82,22 @@ class CommunityProfilesView(generics.ListAPIView):
     def get_queryset(self):
         # Exclude self and return some recent authors/readers
         return User.objects.exclude(id=self.request.user.id).order_by('-date_joined')[:20]
+
+
+class SetPasswordView(APIView):
+    """Allow a Google-only user to set a password so they can log in on platforms
+    where Google Sign-In is not available (e.g. macOS desktop)."""
+    permission_classes = (permissions.AllowAny,)
+
+    def post(self, request):
+        email = request.data.get('email')
+        new_password = request.data.get('password')
+        if not email or not new_password:
+            return Response({'error': 'email and password are required'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            user = User.objects.get(email=email)
+            user.set_password(new_password)
+            user.save()
+            return Response({'message': 'Password set successfully', 'username': user.username})
+        except User.DoesNotExist:
+            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
