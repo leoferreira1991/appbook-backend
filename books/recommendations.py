@@ -84,7 +84,13 @@ class BookRecommendationsView(APIView):
             }
             return Response(fallback_data)
 
-        system = 'Eres un experto bibliotecario. Responde SOLO con JSON válido según el esquema. REGLA ABSOLUTA: en una sección de tipo "author", TODOS los libros DEBEN ser escritos por ese autor específico. Nunca mezcles libros de otros autores en una sección de autor.'
+        system = (
+            'Eres un experto bibliotecario. Responde SOLO con JSON válido según el esquema. '
+            'REGLA ABSOLUTA INQUEBRANTABLE: en una sección de tipo "author", TODOS y CADA UNO de los libros '
+            'DEBEN ser obras escritas por ESE autor específico. "Dos años de vacaciones" es de Jules Verne, NO de Dumas. '
+            '"Los tres mosqueteros" es de Dumas, NO de Verne. VERIFICA cada libro antes de incluirlo. '
+            'Si tienes la más mínima duda de la autoría, NO incluyas ese libro.'
+        )
         
         context_parts = []
         if owned_titles:
@@ -116,8 +122,24 @@ class BookRecommendationsView(APIView):
         )
 
         try:
-            temp = 0.95 if force_refresh else 0.8
+            temp = 0.85 if force_refresh else 0.6
             data = _call_openai(system, user_msg, temperature=temp)
+            # Post-generation validation: remove misattributed books from author sections
+            if data.get('sections'):
+                for section in data['sections']:
+                    if section.get('section_type') == 'author' and section.get('title'):
+                        section_title = section['title'].lower()
+                        # Extract the author name from section title (e.g. "Lo mejor de Alexandre Dumas")
+                        valid_recs = []
+                        for rec in section.get('recommendations', []):
+                            rec_author = (rec.get('author') or '').lower()
+                            # Check if book author matches the section author
+                            if rec_author and rec_author in section_title:
+                                valid_recs.append(rec)
+                            elif any(word in section_title for word in rec_author.split() if len(word) > 3):
+                                valid_recs.append(rec)
+                            # else: discard the misattributed book
+                        section['recommendations'] = valid_recs
             if data.get('sections'):
                 cache_obj.data = data
                 cache_obj.updated_at = timezone.now()
