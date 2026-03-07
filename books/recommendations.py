@@ -53,7 +53,7 @@ class BookRecommendationsView(APIView):
         cache_obj, _ = CachedRecommendation.objects.get_or_create(user=request.user)
         
         # If cache is valid (< 1h), return it immediately
-        if not force_refresh and cache_obj.data and cache_obj.updated_at > (timezone.now() - timedelta(hours=1)):
+        if not force_refresh and cache_obj.data and cache_obj.updated_at > (timezone.now() - timedelta(hours=6)):
             return Response(cache_obj.data)
 
         # 2. Gather context
@@ -84,7 +84,7 @@ class BookRecommendationsView(APIView):
             }
             return Response(fallback_data)
 
-        system = 'Eres un experto bibliotecario. Responde SOLO con JSON válido según el esquema.'
+        system = 'Eres un experto bibliotecario. Responde SOLO con JSON válido según el esquema. REGLA ABSOLUTA: en una sección de tipo "author", TODOS los libros DEBEN ser escritos por ese autor específico. Nunca mezcles libros de otros autores en una sección de autor.'
         
         context_parts = []
         if owned_titles:
@@ -99,8 +99,10 @@ class BookRecommendationsView(APIView):
         user_msg = (
             f"Basado en el siguiente perfil:\n{context_text}\n\n"
             "Genera múltiples secciones de recomendaciones (máximo 4 secciones en total).\n"
-            "1. Una sección 'history' (8 libros) 'Para vos'.\n"
+            "1. Una sección 'history' (8 libros variados) con título '✨ Para vos'.\n"
             "2. Secciones 'author' (6 libros cada una) para hasta 2 de sus autores favoritos.\n"
+            "   REGLA CRÍTICA PARA SECCIONES DE AUTOR: cada libro en la sección DEBE ser escrito por ESE autor.\n"
+            "   Si la sección es 'Lo mejor de Dumas', SOLO libros de Alexandre Dumas. NUNCA mezclar autores.\n"
             "3. Una sección 'publisher' (6 libros) para su editorial favorita.\n"
         )
         
@@ -109,6 +111,7 @@ class BookRecommendationsView(APIView):
 
         user_msg += (
             "CRITICAL SYSTEM DIRECTIVE: YOU MUST STRICTLY EXCLUDE ANY BOOK LISTED IN 'LIBROS YA LEÍDOS O EN BIBLIOTECA (PROHIBIDOS)'. DO NOT SUGGEST THEM UNDER ANY CIRCUMSTANCES.\n"
+            "CRITICAL: en secciones de tipo 'author', el campo 'author' de TODOS los libros DEBE coincidir exactamente con el autor de la sección.\n"
             "Evita repetir libros. Responde estrictamente con este JSON: " + _REC_SCHEMA
         )
 
