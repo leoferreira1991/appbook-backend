@@ -191,3 +191,64 @@ def support(request):
 </body>
 </html>"""
     return HttpResponse(html)
+
+
+def delete_account(request):
+    html = """<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Eliminar Cuenta - AppBook</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8f9fa; color: #1a1a2e; line-height: 1.7; }
+  .container { max-width: 720px; margin: 0 auto; padding: 40px 24px; }
+  h1 { font-size: 28px; margin-bottom: 8px; color: #6c3ce0; }
+  .subtitle { color: #666; font-size: 16px; margin-bottom: 32px; }
+  .card { background: white; border-radius: 16px; padding: 24px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .card h2 { font-size: 18px; color: #333; margin-bottom: 12px; }
+  .card p, .card li { font-size: 15px; color: #555; margin-bottom: 8px; }
+  ul { padding-left: 24px; }
+  a { color: #6c3ce0; text-decoration: none; font-weight: 600; }
+  .btn { display: inline-block; background: #6c3ce0; color: white; padding: 12px 32px; border-radius: 12px; font-size: 16px; margin-top: 16px; }
+  .footer { margin-top: 48px; padding-top: 24px; border-top: 1px solid #ddd; font-size: 13px; color: #888; }
+</style>
+</head>
+<body>
+<div class="container">
+<h1>🗑️ Eliminar mi cuenta</h1>
+<p class="subtitle">Lamentamos que quieras irte. Aquí te explicamos cómo solicitar la eliminación de tu cuenta y datos.</p>
+
+<div class="card">
+<h2>📧 Solicitar eliminación por email</h2>
+<p>Enviá un email a <a href="mailto:appbook.soporte@gmail.com">appbook.soporte@gmail.com</a> con el asunto <strong>"Eliminar mi cuenta"</strong> e incluí:</p>
+<ul>
+<li>Tu nombre de usuario en AppBook</li>
+<li>El correo electrónico asociado a tu cuenta</li>
+</ul>
+<p>Procesaremos tu solicitud en un plazo de <strong>48 horas hábiles</strong>.</p>
+</div>
+
+<div class="card">
+<h2>📋 ¿Qué datos se eliminan?</h2>
+<ul>
+<li>Tu perfil de usuario y credenciales</li>
+<li>Tu biblioteca de libros y progreso de lectura</li>
+<li>Tus reseñas, citas y comentarios</li>
+<li>Tu participación en desafíos de lectura</li>
+<li>Tus interacciones en la comunidad (likes, follows)</li>
+</ul>
+<p><strong>Todos tus datos se eliminan permanentemente y no pueden recuperarse.</strong></p>
+</div>
+
+<div class="card">
+<h2>⏱️ Plazo de eliminación</h2>
+<p>Los datos se eliminan dentro de los <strong>30 días</strong> posteriores a la confirmación de tu solicitud.</p>
+</div>
+
+<div class="footer">© 2026 AppBook — Ferreira González</div>
+</div>
+</body>
+</html>"""
+    return HttpResponse(html)
