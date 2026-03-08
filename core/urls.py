@@ -16,10 +16,14 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from .legal_views import privacy_policy, terms_of_service, support
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/users/', include('users.urls')),
     path('api/books/', include('books.urls')),
     path('api/social/', include('social.urls')),
+    path('privacy/', privacy_policy, name='privacy'),
+    path('terms/', terms_of_service, name='terms'),
+    path('support/', support, name='support'),
 ]
