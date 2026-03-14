@@ -11,6 +11,7 @@ from .author_dedup import AuthorDedupView, AutoMergeAuthorsView
 from .bug_report_views import BugReportView, AdminBugReportsView, AIStatusView
 from .public_library_views import PublicLibraryView
 from .ai_author import AIAuthorProfileView, FollowAuthorView
+from .seed_authors_view import SeedAuthorsView
 
 router = DefaultRouter()
 router.register(r'authors', AuthorViewSet)
@@ -39,6 +40,7 @@ urlpatterns = [
     path('ai-status/', AIStatusView.as_view(), name='ai-status'),
     path('ai-author-profile/', AIAuthorProfileView.as_view(), name='ai-author-profile'),
     path('follow-author/', FollowAuthorView.as_view(), name='follow-author'),
+    path('seed-authors/', SeedAuthorsView.as_view(), name='seed-authors'),
     path('public-library/<int:user_id>/', PublicLibraryView.as_view(), name='public-library'),
     path('', include(router.urls)),
 ]
