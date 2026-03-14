@@ -217,22 +217,24 @@ class AIAuthorProfileView(APIView):
         if not name:
             return Response({'error': 'name parameter required'}, status=400)
 
-        # 1. Check cache first (unless force refresh)
+        # 1. Check cache first — always serve cached data if exists (unless force refresh)
         if not force_refresh:
             try:
                 cached = CachedAuthor.objects.get(name__iexact=name)
-                works_count = cached.works.count()
-                # Auto-refresh if suspiciously few works (likely truncated old data)
-                if works_count >= 15:
+                if cached.works.exists():
                     return Response(_serialize_author(cached))
-                # If < 15 works, regenerate  (the old prompt was truncating)
             except CachedAuthor.DoesNotExist:
                 pass
 
-        # 2. Generate with GPT
+        # 2. Generate with GPT (only for new authors or explicit refresh)
         profile_data = _generate_author_profile(name)
         if not profile_data or 'name' not in profile_data:
-            return Response({'error': 'Could not generate author profile'}, status=404)
+            # If we had cached data but refresh failed, return the cached version
+            try:
+                cached = CachedAuthor.objects.get(name__iexact=name)
+                return Response(_serialize_author(cached))
+            except CachedAuthor.DoesNotExist:
+                return Response({'error': 'Could not generate author profile'}, status=404)
 
         # 3. Get author photo
         photo_url = _get_author_photo_url(profile_data.get('name', name))
@@ -240,7 +242,6 @@ class AIAuthorProfileView(APIView):
 
         # 4. Cache and return
         author = _cache_author_profile(profile_data)
-        # Update photo if we got one
         if photo_url and not author.photo_url:
             author.photo_url = photo_url
             author.save(update_fields=['photo_url'])
