@@ -211,6 +211,31 @@ def _serialize_author(author: CachedAuthor) -> dict:
 class AIAuthorProfileView(APIView):
     permission_classes = [IsAuthenticated]
 
+    def _find_cached(self, name):
+        """Try to find a cached author, with flexible name matching."""
+        # 1. Exact case-insensitive match
+        try:
+            cached = CachedAuthor.objects.get(name__iexact=name)
+            if cached.works.exists():
+                return cached
+        except CachedAuthor.DoesNotExist:
+            pass
+
+        # 2. Partial match: "Stephen King" matches "Stephen Edwin King"
+        #    Split search name into parts and check if all parts are in the cached name
+        name_parts = name.lower().split()
+        candidates = CachedAuthor.objects.all()
+        for part in name_parts:
+            candidates = candidates.filter(name__icontains=part)
+        
+        if candidates.exists():
+            # Return the best match (prefer shortest name = closest match)
+            best = min(candidates, key=lambda a: len(a.name))
+            if best.works.exists():
+                return best
+
+        return None
+
     def get(self, request):
         name = request.query_params.get('name', '').strip()
         force_refresh = request.query_params.get('refresh', '').lower() == 'true'
@@ -219,34 +244,54 @@ class AIAuthorProfileView(APIView):
 
         # 1. Check cache first — always serve cached data if exists (unless force refresh)
         if not force_refresh:
-            try:
-                cached = CachedAuthor.objects.get(name__iexact=name)
-                if cached.works.exists():
-                    return Response(_serialize_author(cached))
-            except CachedAuthor.DoesNotExist:
-                pass
+            cached = self._find_cached(name)
+            if cached:
+                return Response(_serialize_author(cached))
 
         # 2. Generate with GPT (only for new authors or explicit refresh)
-        profile_data = _generate_author_profile(name)
+        try:
+            profile_data = _generate_author_profile(name)
+        except Exception as e:
+            print(f"GPT generation error for '{name}': {e}")
+            profile_data = {}
+
         if not profile_data or 'name' not in profile_data:
             # If we had cached data but refresh failed, return the cached version
-            try:
-                cached = CachedAuthor.objects.get(name__iexact=name)
+            cached = self._find_cached(name)
+            if cached:
                 return Response(_serialize_author(cached))
-            except CachedAuthor.DoesNotExist:
-                return Response({'error': 'Could not generate author profile'}, status=404)
+            return Response({'error': 'Could not generate author profile'}, status=404)
 
         # 3. Get author photo
-        photo_url = _get_author_photo_url(profile_data.get('name', name))
+        try:
+            photo_url = _get_author_photo_url(profile_data.get('name') or name)
+        except Exception:
+            photo_url = ''
         profile_data['photo_url'] = photo_url
 
         # 4. Cache and return
-        author = _cache_author_profile(profile_data)
-        if photo_url and not author.photo_url:
-            author.photo_url = photo_url
-            author.save(update_fields=['photo_url'])
-
-        return Response(_serialize_author(author))
+        try:
+            author = _cache_author_profile(profile_data)
+            if photo_url and not author.photo_url:
+                author.photo_url = photo_url
+                author.save(update_fields=['photo_url'])
+            return Response(_serialize_author(author))
+        except Exception as e:
+            print(f"Cache error for '{name}': {e}")
+            # Return the data directly even if caching fails
+            return Response({
+                'author': {
+                    'name': profile_data.get('name', name),
+                    'bio': profile_data.get('bio', ''),
+                    'birth_year': profile_data.get('birth_year'),
+                    'death_year': profile_data.get('death_year'),
+                    'nationality': profile_data.get('nationality', ''),
+                    'photo_url': photo_url,
+                    'genres': profile_data.get('genres', ''),
+                },
+                'works': profile_data.get('works', []),
+                'total_works': len(profile_data.get('works', [])),
+            })
 
 
 class FollowAuthorView(APIView):
