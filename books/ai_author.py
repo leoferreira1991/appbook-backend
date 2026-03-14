@@ -29,32 +29,85 @@ _AUTHOR_PROFILE_SCHEMA = """{
 
 
 def _generate_author_profile(author_name: str) -> dict:
-    """Use GPT to generate a complete author profile with bibliography."""
+    """Use GPT to generate a complete author profile with full bibliography.
+    
+    Uses a two-step approach:
+    1. First call gets the profile + as many works as possible
+    2. If the author is prolific (>20 known works) and response seems truncated,
+       makes additional calls to get remaining works
+    """
     client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
     system_msg = (
-        "Eres un experto bibliotecario y biógrafo literario. Tu trabajo es generar un perfil completo de un autor. "
-        "REGLAS IMPORTANTES:\n"
-        "1. Incluye TODAS las obras publicadas del autor (novelas, cuentos publicados como libro, ensayos importantes).\n"
-        "2. NO repitas títulos. Cada obra debe aparecer UNA sola vez.\n"
-        "3. Si la obra tiene traducción conocida al español, usa el título en español.\n"
-        "4. Agrupa las obras por saga cuando corresponda (series_name + series_order).\n"
-        "5. La biografía debe ser en español, informativa y de 3-4 párrafos.\n"
-        "6. Si el autor está vivo, death_year debe ser null.\n"
-        "7. Devuelve estrictamente JSON válido con este schema:\n" + _AUTHOR_PROFILE_SCHEMA
+        "Eres un experto bibliotecario y biógrafo literario. Tu trabajo es generar un perfil COMPLETO de un autor "
+        "con TODA su bibliografía.\n\n"
+        "REGLAS CRÍTICAS:\n"
+        "1. DEBES incluir ABSOLUTAMENTE TODAS las obras publicadas del autor. "
+        "Por ejemplo: Agatha Christie tiene 66 novelas de misterio — debes listar las 66. "
+        "Stephen King tiene más de 60 novelas — debes listar todas.\n"
+        "2. NO omitas obras. Si un autor tiene 50 novelas, lista las 50. Si tiene 80, lista las 80.\n"
+        "3. NO repitas títulos. Cada obra debe aparecer UNA sola vez.\n"
+        "4. Si la obra tiene traducción conocida al español, usa el título en español.\n"
+        "5. Agrupa las obras por saga cuando corresponda (series_name + series_order).\n"
+        "6. La biografía debe ser en español, informativa y de 3-4 párrafos.\n"
+        "7. Si el autor está vivo, death_year debe ser null.\n"
+        "8. Incluye: novelas, novelas cortas publicadas como libro, colecciones de cuentos, "
+        "y obras de teatro publicadas. NO incluyas cuentos sueltos no publicados como libro.\n\n"
+        "Devuelve estrictamente JSON válido con este schema:\n" + _AUTHOR_PROFILE_SCHEMA
     )
 
     try:
+        # First call — get full profile with bibliography
         response = client.chat.completions.create(
             model='gpt-4o-mini',
             messages=[
                 {'role': 'system', 'content': system_msg},
-                {'role': 'user', 'content': f"Genera el perfil completo del autor: {author_name}"}
+                {'role': 'user', 'content': (
+                    f"Genera el perfil completo del autor: {author_name}\n\n"
+                    "IMPORTANTE: Lista TODAS sus obras publicadas, no solo las más famosas. "
+                    "Necesito la bibliografía COMPLETA."
+                )}
             ],
             response_format={'type': 'json_object'},
             temperature=0.3,
+            max_tokens=16000,
         )
-        return json.loads(response.choices[0].message.content)
+        profile = json.loads(response.choices[0].message.content)
+        
+        works = profile.get('works', [])
+        
+        # If we got few works, it might be truncated — ask for more
+        if len(works) < 20:
+            # Second call specifically for works
+            works_response = client.chat.completions.create(
+                model='gpt-4o-mini',
+                messages=[
+                    {'role': 'system', 'content': (
+                        "Eres un experto bibliotecario. Debes listar TODAS las obras publicadas de un autor. "
+                        "Devuelve JSON con un array 'works' que contenga TODAS las obras. "
+                        "Cada obra: {\"title\": \"...\", \"year\": 1920, \"genre\": \"...\", "
+                        "\"original_language\": \"...\", \"series_name\": \"...\", \"series_order\": N}\n"
+                        "NO omitas ninguna obra. Si el autor tiene 66 novelas, lista las 66."
+                    )},
+                    {'role': 'user', 'content': (
+                        f"Lista ABSOLUTAMENTE TODAS las obras publicadas de {author_name}. "
+                        f"Ya tengo {len(works)} obras pero necesito la lista COMPLETA. "
+                        "Incluye novelas, colecciones de cuentos, novelas cortas publicadas como libro, "
+                        "y obras de teatro. Usa títulos en español cuando exista traducción conocida."
+                    )}
+                ],
+                response_format={'type': 'json_object'},
+                temperature=0.3,
+                max_tokens=16000,
+            )
+            extra_data = json.loads(works_response.choices[0].message.content)
+            extra_works = extra_data.get('works', [])
+            
+            if len(extra_works) > len(works):
+                # The second call got more works, use it instead
+                profile['works'] = extra_works
+        
+        return profile
     except Exception as e:
         print(f"OpenAI Author Profile Error: {e}")
         return {}
@@ -160,16 +213,21 @@ class AIAuthorProfileView(APIView):
 
     def get(self, request):
         name = request.query_params.get('name', '').strip()
+        force_refresh = request.query_params.get('refresh', '').lower() == 'true'
         if not name:
             return Response({'error': 'name parameter required'}, status=400)
 
-        # 1. Check cache first
-        try:
-            cached = CachedAuthor.objects.get(name__iexact=name)
-            if cached.works.exists():
-                return Response(_serialize_author(cached))
-        except CachedAuthor.DoesNotExist:
-            pass
+        # 1. Check cache first (unless force refresh)
+        if not force_refresh:
+            try:
+                cached = CachedAuthor.objects.get(name__iexact=name)
+                works_count = cached.works.count()
+                # Auto-refresh if suspiciously few works (likely truncated old data)
+                if works_count >= 15:
+                    return Response(_serialize_author(cached))
+                # If < 15 works, regenerate  (the old prompt was truncating)
+            except CachedAuthor.DoesNotExist:
+                pass
 
         # 2. Generate with GPT
         profile_data = _generate_author_profile(name)
