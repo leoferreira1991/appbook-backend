@@ -228,3 +228,37 @@ class CachedRecommendation(models.Model):
 
     def __str__(self):
         return f"Cache for {self.user.username}"
+
+
+class CachedAuthor(models.Model):
+    """Cache de perfiles de autor generados por IA."""
+    name = models.CharField(max_length=255, unique=True, db_index=True)
+    bio = models.TextField(blank=True)
+    birth_year = models.IntegerField(null=True, blank=True)
+    death_year = models.IntegerField(null=True, blank=True)
+    nationality = models.CharField(max_length=100, blank=True)
+    photo_url = models.URLField(blank=True)
+    genres = models.CharField(max_length=500, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"CachedAuthor: {self.name}"
+
+
+class CachedAuthorWork(models.Model):
+    """Obras de un autor cacheadas (bibliografía completa)."""
+    author = models.ForeignKey(CachedAuthor, related_name='works', on_delete=models.CASCADE)
+    title = models.CharField(max_length=255)
+    year = models.IntegerField(null=True, blank=True)
+    genre = models.CharField(max_length=100, blank=True)
+    original_language = models.CharField(max_length=50, blank=True)
+    series_name = models.CharField(max_length=255, blank=True)
+    series_order = models.IntegerField(null=True, blank=True)
+
+    class Meta:
+        unique_together = ('author', 'title')
+        ordering = ['year', 'title']
+
+    def __str__(self):
+        return f"{self.title} ({self.year}) by {self.author.name}"
