@@ -166,9 +166,9 @@ def _cache_author_profile(profile_data: dict) -> CachedAuthor:
             author=author,
             title=title,
             year=w.get('year'),
-            genre=w.get('genre', ''),
-            original_language=w.get('original_language', ''),
-            series_name=w.get('series_name', ''),
+            genre=w.get('genre') or '',
+            original_language=w.get('original_language') or '',
+            series_name=w.get('series_name') or '',
             series_order=w.get('series_order'),
         ))
 
