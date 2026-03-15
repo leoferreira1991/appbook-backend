@@ -31,10 +31,10 @@ _AUTHOR_PROFILE_SCHEMA = """{
 def _generate_author_profile(author_name: str) -> dict:
     """Use GPT to generate a complete author profile with full bibliography.
     
-    Uses a two-step approach:
-    1. First call gets the profile + as many works as possible
-    2. If the author is prolific (>20 known works) and response seems truncated,
-       makes additional calls to get remaining works
+    Uses an iterative approach:
+    1. First call gets the profile (bio, dates, etc.) + initial batch of works
+    2. Subsequent calls send the already-known titles and ask for remaining works
+    3. Loop continues until GPT returns < 3 new works or max 8 iterations
     """
     client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
@@ -42,9 +42,7 @@ def _generate_author_profile(author_name: str) -> dict:
         "Eres un experto bibliotecario y biógrafo literario. Tu trabajo es generar un perfil COMPLETO de un autor "
         "con TODA su bibliografía.\n\n"
         "REGLAS CRÍTICAS:\n"
-        "1. DEBES incluir ABSOLUTAMENTE TODAS las obras publicadas del autor. "
-        "Por ejemplo: Agatha Christie tiene 66 novelas de misterio — debes listar las 66. "
-        "Stephen King tiene más de 60 novelas — debes listar todas.\n"
+        "1. DEBES incluir ABSOLUTAMENTE TODAS las obras publicadas del autor.\n"
         "2. NO omitas obras. Si un autor tiene 50 novelas, lista las 50. Si tiene 80, lista las 80.\n"
         "3. NO repitas títulos. Cada obra debe aparecer UNA sola vez.\n"
         "4. Si la obra tiene traducción conocida al español, usa el título en español.\n"
@@ -57,7 +55,7 @@ def _generate_author_profile(author_name: str) -> dict:
     )
 
     try:
-        # First call — get full profile with bibliography
+        # ── Step 1: Get profile + initial batch of works ──
         response = client.chat.completions.create(
             model='gpt-4o-mini',
             messages=[
@@ -76,36 +74,74 @@ def _generate_author_profile(author_name: str) -> dict:
         
         works = profile.get('works', [])
         
-        # If we got few works, it might be truncated — ask for more
-        if len(works) < 20:
-            # Second call specifically for works
-            works_response = client.chat.completions.create(
+        # Normalize titles for deduplication
+        def normalize(title):
+            return title.strip().lower()
+        
+        all_works = {}
+        for w in works:
+            title = w.get('title', '').strip()
+            if title and normalize(title) not in all_works:
+                all_works[normalize(title)] = w
+        
+        # ── Step 2: Iterative loop to fetch remaining works ──
+        MAX_ITERATIONS = 8
+        MIN_NEW_WORKS = 3  # Stop if fewer than 3 new works returned
+        
+        for iteration in range(MAX_ITERATIONS):
+            known_titles = [w.get('title', '') for w in all_works.values()]
+            
+            # If we have fewer than 15, probably not a prolific author — one more try
+            # If we have 15+, keep going until GPT has nothing more to add
+            if iteration > 0 and len(known_titles) < 15:
+                break
+            
+            continuation_response = client.chat.completions.create(
                 model='gpt-4o-mini',
                 messages=[
                     {'role': 'system', 'content': (
-                        "Eres un experto bibliotecario. Debes listar TODAS las obras publicadas de un autor. "
-                        "Devuelve JSON con un array 'works' que contenga TODAS las obras. "
+                        "Eres un experto bibliotecario. Tu tarea es completar la bibliografía de un autor.\n"
+                        "Te voy a dar una lista de obras que YA TENGO. Necesito que me des las que FALTAN.\n"
+                        "Devuelve JSON con un array 'works' que contenga SOLO las obras que NO están en mi lista.\n"
+                        "Si NO falta ninguna obra, devuelve {\"works\": []}.\n"
                         "Cada obra: {\"title\": \"...\", \"year\": 1920, \"genre\": \"...\", "
                         "\"original_language\": \"...\", \"series_name\": \"...\", \"series_order\": N}\n"
-                        "NO omitas ninguna obra. Si el autor tiene 66 novelas, lista las 66."
+                        "Usa títulos en español cuando exista traducción conocida."
                     )},
                     {'role': 'user', 'content': (
-                        f"Lista ABSOLUTAMENTE TODAS las obras publicadas de {author_name}. "
-                        f"Ya tengo {len(works)} obras pero necesito la lista COMPLETA. "
-                        "Incluye novelas, colecciones de cuentos, novelas cortas publicadas como libro, "
-                        "y obras de teatro. Usa títulos en español cuando exista traducción conocida."
+                        f"Autor: {author_name}\n\n"
+                        f"Ya tengo estas {len(known_titles)} obras:\n"
+                        + "\n".join(f"- {t}" for t in known_titles)
+                        + "\n\n¿Cuáles obras publicadas de este autor FALTAN en mi lista? "
+                        "Incluye novelas, colecciones de cuentos, novelas cortas, y obras de teatro. "
+                        "Si no falta ninguna, devuelve {\"works\": []}."
                     )}
                 ],
                 response_format={'type': 'json_object'},
                 temperature=0.3,
                 max_tokens=16000,
             )
-            extra_data = json.loads(works_response.choices[0].message.content)
+            
+            extra_data = json.loads(continuation_response.choices[0].message.content)
             extra_works = extra_data.get('works', [])
             
-            if len(extra_works) > len(works):
-                # The second call got more works, use it instead
-                profile['works'] = extra_works
+            # Count genuinely new works
+            new_count = 0
+            for w in extra_works:
+                title = w.get('title', '').strip()
+                if title and normalize(title) not in all_works:
+                    all_works[normalize(title)] = w
+                    new_count += 1
+            
+            print(f"  [{author_name}] Iteration {iteration + 1}: +{new_count} new works (total: {len(all_works)})")
+            
+            # Stop if we got fewer than MIN_NEW_WORKS new unique works
+            if new_count < MIN_NEW_WORKS:
+                break
+        
+        # Replace works in profile with the accumulated complete list
+        profile['works'] = list(all_works.values())
+        print(f"  [{author_name}] Final bibliography: {len(profile['works'])} works")
         
         return profile
     except Exception as e:
