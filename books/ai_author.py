@@ -297,6 +297,22 @@ class AIAuthorProfileView(APIView):
 class FollowAuthorView(APIView):
     permission_classes = [IsAuthenticated]
 
+    def get(self, request):
+        """Check if user follows a specific author."""
+        author_name = request.query_params.get('name', '').strip()
+        if not author_name:
+            return Response({'error': 'name parameter required'}, status=400)
+
+        user = request.user
+        current = user.favorite_authors or ''
+        authors_list = [a.strip().lower() for a in current.split(',') if a.strip()]
+        is_following = author_name.lower() in authors_list
+
+        return Response({
+            'is_following': is_following,
+            'favorite_authors': [a.strip() for a in (user.favorite_authors or '').split(',') if a.strip()],
+        })
+
     def post(self, request):
         author_name = request.data.get('author_name', '').strip()
         if not author_name:
