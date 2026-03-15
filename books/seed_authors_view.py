@@ -162,12 +162,14 @@ def _seed_worker():
     # Deduplicate
     unique = list(dict.fromkeys(FAMOUS_AUTHORS))
 
-    # Filter out already-cached authors
+    # Filter out already-cached authors (only skip if they have enough works)
     to_process = []
     for name in unique:
         try:
             cached = CachedAuthor.objects.get(name__iexact=name)
-            if cached.works.exists():
+            # Only skip if the author has a substantial bibliography (15+ works)
+            # Authors with fewer works may have been cached before the improved GPT prompt
+            if cached.works.count() >= 15:
                 continue
         except CachedAuthor.DoesNotExist:
             pass
