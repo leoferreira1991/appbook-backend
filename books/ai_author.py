@@ -114,8 +114,45 @@ def _generate_author_profile(author_name: str) -> dict:
     
     # ── Step 0: Fetch Wikipedia bibliography ──
     wiki_text = _fetch_wikipedia_bibliography(author_name)
+    wiki_works = []
+    
     if wiki_text:
         print(f"  [{author_name}] Wikipedia bibliography: {len(wiki_text)} chars")
+        
+        # ── Step 0.5: Dedicated GPT call to extract works from Wikipedia ──
+        try:
+            wiki_extract_response = client.chat.completions.create(
+                model='gpt-4o-mini',
+                messages=[
+                    {'role': 'system', 'content': (
+                        "Eres un parser de datos. Tu ÚNICA tarea es extraer la lista de obras literarias "
+                        "del texto de Wikipedia que te doy.\n\n"
+                        "REGLAS:\n"
+                        "1. Extrae TODOS los títulos de libros, novelas, colecciones de cuentos, y obras de teatro.\n"
+                        "2. Traduce los títulos al español cuando exista traducción conocida.\n"
+                        "3. NO inventes obras. Solo extrae las que aparecen en el texto.\n"
+                        "4. Incluye el año de publicación si aparece.\n"
+                        "5. Incluye el género si se puede detectar del contexto.\n"
+                        "6. Si la obra pertenece a una serie/saga, indica el nombre de la serie.\n"
+                        "7. NO incluyas películas, series de TV, ni adaptaciones.\n"
+                        "8. NO repitas títulos.\n\n"
+                        "Devuelve JSON: {\"works\": [{\"title\": \"...\", \"year\": 1920, \"genre\": \"...\", "
+                        "\"original_language\": \"...\", \"series_name\": \"...\", \"series_order\": N}]}"
+                    )},
+                    {'role': 'user', 'content': (
+                        f"Extrae TODAS las obras literarias del autor {author_name} "
+                        f"de este texto de Wikipedia:\n\n{wiki_text}"
+                    )}
+                ],
+                response_format={'type': 'json_object'},
+                temperature=0.1,
+                max_tokens=16000,
+            )
+            wiki_data = json.loads(wiki_extract_response.choices[0].message.content)
+            wiki_works = wiki_data.get('works', [])
+            print(f"  [{author_name}] Wikipedia extraction: {len(wiki_works)} works found")
+        except Exception as e:
+            print(f"  [{author_name}] Wikipedia extraction error: {e}")
     else:
         print(f"  [{author_name}] No Wikipedia bibliography found, using GPT only")
 
@@ -145,27 +182,16 @@ def _generate_author_profile(author_name: str) -> dict:
     )
 
     try:
-        # ── Step 1: Get profile + initial batch of works ──
-        user_content = f"Genera el perfil completo del autor: {author_name}\n\n"
-        if wiki_text:
-            user_content += (
-                "REFERENCIA IMPORTANTE: A continuación tienes texto de Wikipedia con la bibliografía del autor. "
-                "DEBES usar esta información como base para extraer TODAS las obras mencionadas. "
-                "Traduce los títulos al español cuando exista traducción conocida.\n\n"
-                "--- WIKIPEDIA ---\n"
-                f"{wiki_text}\n"
-                "--- FIN WIKIPEDIA ---\n\n"
-            )
-        user_content += (
-            "IMPORTANTE: Lista TODAS sus obras publicadas, no solo las más famosas. "
-            "Necesito la bibliografía COMPLETA."
-        )
-        
+        # ── Step 1: Get profile + initial batch of works (WITHOUT Wikipedia context) ──
         response = client.chat.completions.create(
             model='gpt-4o-mini',
             messages=[
                 {'role': 'system', 'content': system_msg},
-                {'role': 'user', 'content': user_content}
+                {'role': 'user', 'content': (
+                    f"Genera el perfil completo del autor: {author_name}\n\n"
+                    "IMPORTANTE: Lista TODAS sus obras publicadas, no solo las más famosas. "
+                    "Necesito la bibliografía COMPLETA."
+                )}
             ],
             response_format={'type': 'json_object'},
             temperature=0.3,
@@ -180,10 +206,20 @@ def _generate_author_profile(author_name: str) -> dict:
             return title.strip().lower()
         
         all_works = {}
+        # First, add Wikipedia-extracted works (higher quality source)
+        for w in wiki_works:
+            title = w.get('title', '').strip()
+            if title and normalize(title) not in all_works:
+                all_works[normalize(title)] = w
+        
+        wiki_count = len(all_works)
+        # Then add GPT profile works (fills gaps)
         for w in works:
             title = w.get('title', '').strip()
             if title and normalize(title) not in all_works:
                 all_works[normalize(title)] = w
+        
+        print(f"  [{author_name}] Merged: {wiki_count} from Wikipedia + {len(all_works) - wiki_count} new from GPT = {len(all_works)} total")
         
         # ── Step 2: Iterative loop to fetch remaining works ──
         MAX_ITERATIONS = 12
