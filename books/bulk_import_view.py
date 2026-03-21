@@ -2,7 +2,7 @@
 Admin endpoint to bulk-populate a user's library from a pre-defined book list.
 Triggered via POST with admin key. Skips books already in the library.
 """
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .models import UserBookExternal
@@ -399,6 +399,7 @@ class BulkLibraryImportView(APIView):
             dry_run = request.data.get('dry_run', False)
 
             try:
+                User = get_user_model()
                 user = User.objects.get(username=username)
             except User.DoesNotExist:
                 return Response({'error': f'User "{username}" not found'}, status=404)
@@ -459,6 +460,7 @@ class BulkLibraryImportView(APIView):
 
             username = request.query_params.get('username', 'cr.leonardo.ferreira')
             try:
+                User = get_user_model()
                 user = User.objects.get(username=username)
             except User.DoesNotExist:
                 return Response({'error': f'User "{username}" not found'}, status=404)
