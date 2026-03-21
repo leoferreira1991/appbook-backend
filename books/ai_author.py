@@ -3,6 +3,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 import json
+import requests as http_requests
 from openai import OpenAI
 
 from .models import CachedAuthor, CachedAuthorWork
@@ -28,15 +29,95 @@ _AUTHOR_PROFILE_SCHEMA = """{
 }"""
 
 
-def _generate_author_profile(author_name: str) -> dict:
-    """Use GPT to generate a complete author profile with full bibliography.
+_WIKI_HEADERS = {'User-Agent': 'AppBook/1.0 (admin@appbook.com)'}
+
+
+def _fetch_wikipedia_bibliography(author_name: str) -> str:
+    """Fetch bibliography text from Wikipedia (ES + EN).
     
-    Uses an iterative approach:
-    1. First call gets the profile (bio, dates, etc.) + initial batch of works
-    2. Subsequent calls send the already-known titles and ask for remaining works
-    3. Loop continues until GPT returns < 3 new works or max 8 iterations
+    Tries:
+    1. Dedicated bibliography page (e.g., 'Agatha Christie bibliography')
+    2. Bibliography/Obras section from the author's main page
+    
+    Returns plain text of the bibliography, or empty string if not found.
+    """
+    texts = []
+    
+    for lang, bib_prefix, section_keywords in [
+        ('en', ' bibliography', ['bibliography', 'works', 'novels', 'publications', 'published works']),
+        ('es', '', ['bibliografía', 'obras', 'novelas', 'publicaciones']),
+    ]:
+        api_url = f'https://{lang}.wikipedia.org/w/api.php'
+        
+        try:
+            # Try 1: Dedicated bibliography page
+            bib_page = f'{author_name}{bib_prefix}'
+            r = http_requests.get(api_url, params={
+                'action': 'query', 'titles': bib_page,
+                'prop': 'extracts', 'explaintext': True, 'format': 'json'
+            }, headers=_WIKI_HEADERS, timeout=10)
+            pages = r.json().get('query', {}).get('pages', {})
+            for pid, page in pages.items():
+                if pid != '-1':  # Page exists
+                    extract = page.get('extract', '')
+                    if extract and len(extract) > 200:
+                        texts.append(f'[Wikipedia {lang.upper()} - {bib_page}]\n{extract}')
+            
+            # Try 2: Author main page, bibliography section
+            r2 = http_requests.get(api_url, params={
+                'action': 'query', 'list': 'search',
+                'srsearch': author_name, 'format': 'json', 'srlimit': 1
+            }, headers=_WIKI_HEADERS, timeout=10)
+            results = r2.json().get('query', {}).get('search', [])
+            if results:
+                main_page = results[0]['title']
+                
+                # Get sections list
+                r3 = http_requests.get(api_url, params={
+                    'action': 'parse', 'page': main_page,
+                    'prop': 'sections', 'format': 'json'
+                }, headers=_WIKI_HEADERS, timeout=10)
+                sections = r3.json().get('parse', {}).get('sections', [])
+                
+                for section in sections:
+                    if any(kw in section.get('line', '').lower() for kw in section_keywords):
+                        # Fetch this section's text
+                        r4 = http_requests.get(api_url, params={
+                            'action': 'parse', 'page': main_page,
+                            'prop': 'wikitext', 'section': section['index'],
+                            'format': 'json'
+                        }, headers=_WIKI_HEADERS, timeout=10)
+                        wikitext = r4.json().get('parse', {}).get('wikitext', {}).get('*', '')
+                        if wikitext and len(wikitext) > 100:
+                            texts.append(f'[Wikipedia {lang.upper()} - {main_page} - {section["line"]}]\n{wikitext}')
+        except Exception as e:
+            print(f"  [Wikipedia] Error fetching {lang}: {e}")
+            continue
+    
+    combined = '\n\n'.join(texts)
+    # Truncate to 12000 chars to fit in GPT context
+    if len(combined) > 12000:
+        combined = combined[:12000] + '\n... (truncated)'
+    return combined
+
+
+def _generate_author_profile(author_name: str) -> dict:
+    """Use Wikipedia + GPT to generate a complete author profile with full bibliography.
+    
+    Pipeline:
+    1. Fetch bibliography text from Wikipedia (ES + EN)
+    2. Send Wikipedia text to GPT to extract structured works data
+    3. GPT also generates bio, dates, nationality from its own knowledge
+    4. Iterative loop asks GPT for any remaining works
     """
     client = OpenAI(api_key=settings.OPENAI_API_KEY)
+    
+    # ── Step 0: Fetch Wikipedia bibliography ──
+    wiki_text = _fetch_wikipedia_bibliography(author_name)
+    if wiki_text:
+        print(f"  [{author_name}] Wikipedia bibliography: {len(wiki_text)} chars")
+    else:
+        print(f"  [{author_name}] No Wikipedia bibliography found, using GPT only")
 
     system_msg = (
         "Eres un experto bibliotecario y biógrafo literario. Tu trabajo es generar un perfil COMPLETO de un autor "
@@ -65,15 +146,26 @@ def _generate_author_profile(author_name: str) -> dict:
 
     try:
         # ── Step 1: Get profile + initial batch of works ──
+        user_content = f"Genera el perfil completo del autor: {author_name}\n\n"
+        if wiki_text:
+            user_content += (
+                "REFERENCIA IMPORTANTE: A continuación tienes texto de Wikipedia con la bibliografía del autor. "
+                "DEBES usar esta información como base para extraer TODAS las obras mencionadas. "
+                "Traduce los títulos al español cuando exista traducción conocida.\n\n"
+                "--- WIKIPEDIA ---\n"
+                f"{wiki_text}\n"
+                "--- FIN WIKIPEDIA ---\n\n"
+            )
+        user_content += (
+            "IMPORTANTE: Lista TODAS sus obras publicadas, no solo las más famosas. "
+            "Necesito la bibliografía COMPLETA."
+        )
+        
         response = client.chat.completions.create(
             model='gpt-4o-mini',
             messages=[
                 {'role': 'system', 'content': system_msg},
-                {'role': 'user', 'content': (
-                    f"Genera el perfil completo del autor: {author_name}\n\n"
-                    "IMPORTANTE: Lista TODAS sus obras publicadas, no solo las más famosas. "
-                    "Necesito la bibliografía COMPLETA."
-                )}
+                {'role': 'user', 'content': user_content}
             ],
             response_format={'type': 'json_object'},
             temperature=0.3,
