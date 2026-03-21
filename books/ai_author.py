@@ -37,67 +37,82 @@ def _fetch_wikipedia_bibliography(author_name: str) -> str:
     
     Tries:
     1. Dedicated bibliography page (e.g., 'Agatha Christie bibliography')
+       → fetches each section as wikitext for maximum data
     2. Bibliography/Obras section from the author's main page
     
-    Returns plain text of the bibliography, or empty string if not found.
+    Returns wikitext/plain text of the bibliography, or empty string if not found.
     """
     texts = []
     
-    for lang, bib_prefix, section_keywords in [
-        ('en', ' bibliography', ['bibliography', 'works', 'novels', 'publications', 'published works']),
-        ('es', '', ['bibliografía', 'obras', 'novelas', 'publicaciones']),
-    ]:
+    bib_keywords = ['novels', 'bibliography', 'works', 'short fiction', 'stage works',
+                    'plays', 'collections', 'poetry', 'miscellany', 'publications',
+                    'bibliografía', 'obras', 'novelas', 'publicaciones', 'cuentos', 'teatro']
+    skip_keywords = ['notes', 'references', 'sources', 'see also', 'external', 'notas',
+                     'referencias', 'véase', 'enlaces']
+    
+    for lang, bib_suffix in [('en', ' bibliography'), ('es', '')]:
         api_url = f'https://{lang}.wikipedia.org/w/api.php'
         
         try:
-            # Try 1: Dedicated bibliography page
-            bib_page = f'{author_name}{bib_prefix}'
+            # Try 1: Dedicated bibliography page — fetch ALL sections as wikitext
+            bib_page = f'{author_name}{bib_suffix}'
             r = http_requests.get(api_url, params={
-                'action': 'query', 'titles': bib_page,
-                'prop': 'extracts', 'explaintext': True, 'format': 'json'
+                'action': 'parse', 'page': bib_page,
+                'prop': 'sections', 'format': 'json'
             }, headers=_WIKI_HEADERS, timeout=10)
-            pages = r.json().get('query', {}).get('pages', {})
-            for pid, page in pages.items():
-                if pid != '-1':  # Page exists
-                    extract = page.get('extract', '')
-                    if extract and len(extract) > 200:
-                        texts.append(f'[Wikipedia {lang.upper()} - {bib_page}]\n{extract}')
+            parse_data = r.json().get('parse', {})
             
-            # Try 2: Author main page, bibliography section
-            r2 = http_requests.get(api_url, params={
+            if parse_data:  # Page exists
+                sections = parse_data.get('sections', [])
+                for section in sections:
+                    section_name = section.get('line', '').lower()
+                    # Skip non-bibliography sections
+                    if any(kw in section_name for kw in skip_keywords):
+                        continue
+                    # Include bibliography-related sections
+                    if any(kw in section_name for kw in bib_keywords) or section.get('level') == '2':
+                        r2 = http_requests.get(api_url, params={
+                            'action': 'parse', 'page': bib_page,
+                            'section': section['index'],
+                            'prop': 'wikitext', 'format': 'json'
+                        }, headers=_WIKI_HEADERS, timeout=10)
+                        wikitext = r2.json().get('parse', {}).get('wikitext', {}).get('*', '')
+                        if wikitext and len(wikitext) > 50:
+                            texts.append(f'[{lang.upper()} - {bib_page} - {section["line"]}]\n{wikitext}')
+            
+            # Try 2: Author's main page — bibliography/obras section
+            r3 = http_requests.get(api_url, params={
                 'action': 'query', 'list': 'search',
                 'srsearch': author_name, 'format': 'json', 'srlimit': 1
             }, headers=_WIKI_HEADERS, timeout=10)
-            results = r2.json().get('query', {}).get('search', [])
+            results = r3.json().get('query', {}).get('search', [])
             if results:
                 main_page = results[0]['title']
-                
-                # Get sections list
-                r3 = http_requests.get(api_url, params={
+                r4 = http_requests.get(api_url, params={
                     'action': 'parse', 'page': main_page,
                     'prop': 'sections', 'format': 'json'
                 }, headers=_WIKI_HEADERS, timeout=10)
-                sections = r3.json().get('parse', {}).get('sections', [])
+                sections = r4.json().get('parse', {}).get('sections', [])
                 
                 for section in sections:
-                    if any(kw in section.get('line', '').lower() for kw in section_keywords):
-                        # Fetch this section's text
-                        r4 = http_requests.get(api_url, params={
+                    section_name = section.get('line', '').lower()
+                    if any(kw in section_name for kw in bib_keywords):
+                        r5 = http_requests.get(api_url, params={
                             'action': 'parse', 'page': main_page,
-                            'prop': 'wikitext', 'section': section['index'],
-                            'format': 'json'
+                            'section': section['index'],
+                            'prop': 'wikitext', 'format': 'json'
                         }, headers=_WIKI_HEADERS, timeout=10)
-                        wikitext = r4.json().get('parse', {}).get('wikitext', {}).get('*', '')
+                        wikitext = r5.json().get('parse', {}).get('wikitext', {}).get('*', '')
                         if wikitext and len(wikitext) > 100:
-                            texts.append(f'[Wikipedia {lang.upper()} - {main_page} - {section["line"]}]\n{wikitext}')
+                            texts.append(f'[{lang.upper()} - {main_page} - {section["line"]}]\n{wikitext}')
         except Exception as e:
             print(f"  [Wikipedia] Error fetching {lang}: {e}")
             continue
     
     combined = '\n\n'.join(texts)
-    # Truncate to 12000 chars to fit in GPT context
-    if len(combined) > 12000:
-        combined = combined[:12000] + '\n... (truncated)'
+    # Allow up to 30000 chars for rich bibliography data
+    if len(combined) > 30000:
+        combined = combined[:30000] + '\n... (truncated)'
     return combined
 
 
