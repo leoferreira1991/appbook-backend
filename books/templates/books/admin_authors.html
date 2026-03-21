@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,7 +8,13 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
         :root {
             --bg-primary: #0f0f1a;
@@ -27,7 +34,7 @@
             --danger: #e74c3c;
             --info: #3498db;
             --radius: 12px;
-            --shadow: 0 8px 32px rgba(0,0,0,0.3);
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         }
 
         body {
@@ -45,9 +52,12 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            position: sticky; top: 0; z-index: 100;
+            position: sticky;
+            top: 0;
+            z-index: 100;
             backdrop-filter: blur(20px);
         }
+
         .header h1 {
             font-size: 1.5rem;
             font-weight: 700;
@@ -55,11 +65,15 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
+
         .header .stats {
             font-size: 0.85rem;
             color: var(--text-secondary);
         }
-        .header .stats strong { color: var(--accent); }
+
+        .header .stats strong {
+            color: var(--accent);
+        }
 
         /* ─── Toolbar ─── */
         .toolbar {
@@ -71,11 +85,13 @@
             background: var(--bg-secondary);
             border-bottom: 1px solid var(--border);
         }
+
         .search-box {
             flex: 1;
             min-width: 250px;
             position: relative;
         }
+
         .search-box input {
             width: 100%;
             padding: 10px 16px 10px 40px;
@@ -86,11 +102,13 @@
             font-size: 0.9rem;
             transition: border-color 0.2s;
         }
+
         .search-box input:focus {
             outline: none;
             border-color: var(--accent);
             box-shadow: 0 0 0 3px var(--accent-soft);
         }
+
         .search-box::before {
             content: '🔍';
             position: absolute;
@@ -114,25 +132,71 @@
             gap: 6px;
             white-space: nowrap;
         }
-        .btn-primary { background: var(--accent); color: #fff; }
-        .btn-primary:hover { background: var(--accent-hover); transform: translateY(-1px); }
-        .btn-success { background: var(--success); color: #fff; }
-        .btn-success:hover { background: #27ae60; }
-        .btn-warning { background: var(--warning); color: #111; }
-        .btn-warning:hover { background: #e67e22; }
-        .btn-danger { background: var(--danger); color: #fff; }
-        .btn-danger:hover { background: #c0392b; }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: #fff;
+        }
+
+        .btn-success:hover {
+            background: #27ae60;
+        }
+
+        .btn-warning {
+            background: var(--warning);
+            color: #111;
+        }
+
+        .btn-warning:hover {
+            background: #e67e22;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: #fff;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
         .btn-outline {
             background: transparent;
             border: 1px solid var(--border);
             color: var(--text-secondary);
         }
-        .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
-        .btn-sm { padding: 5px 12px; font-size: 0.78rem; }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .btn-outline:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .btn-sm {
+            padding: 5px 12px;
+            font-size: 0.78rem;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
 
         /* ─── Main Content ─── */
-        .content { padding: 24px 32px; max-width: 1400px; margin: 0 auto; }
+        .content {
+            padding: 24px 32px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
 
         /* ─── Author Grid ─── */
         .author-grid {
@@ -141,6 +205,7 @@
             gap: 16px;
             margin-top: 16px;
         }
+
         .author-card {
             background: var(--bg-card);
             border: 1px solid var(--border);
@@ -151,21 +216,29 @@
             position: relative;
             overflow: hidden;
         }
+
         .author-card::before {
             content: '';
             position: absolute;
-            top: 0; left: 0; right: 0;
+            top: 0;
+            left: 0;
+            right: 0;
             height: 3px;
             background: linear-gradient(90deg, var(--accent), transparent);
             opacity: 0;
             transition: opacity 0.3s;
         }
+
         .author-card:hover {
             border-color: var(--accent);
             transform: translateY(-2px);
             box-shadow: var(--shadow);
         }
-        .author-card:hover::before { opacity: 1; }
+
+        .author-card:hover::before {
+            opacity: 1;
+        }
+
         .author-card.selected {
             border-color: var(--accent);
             box-shadow: 0 0 0 2px var(--accent-soft);
@@ -176,15 +249,22 @@
             gap: 14px;
             align-items: center;
         }
+
         .author-photo {
-            width: 56px; height: 56px;
+            width: 56px;
+            height: 56px;
             border-radius: 50%;
             object-fit: cover;
             border: 2px solid var(--border);
             flex-shrink: 0;
             background: var(--bg-secondary);
         }
-        .author-info { flex: 1; min-width: 0; }
+
+        .author-info {
+            flex: 1;
+            min-width: 0;
+        }
+
         .author-name {
             font-weight: 600;
             font-size: 1rem;
@@ -193,6 +273,7 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
+
         .author-meta {
             font-size: 0.78rem;
             color: var(--text-secondary);
@@ -200,7 +281,13 @@
             gap: 12px;
             flex-wrap: wrap;
         }
-        .author-meta span { display: inline-flex; align-items: center; gap: 4px; }
+
+        .author-meta span {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
         .badge {
             display: inline-block;
             padding: 2px 8px;
@@ -208,18 +295,28 @@
             font-size: 0.7rem;
             font-weight: 600;
         }
-        .badge-works { background: var(--accent-soft); color: var(--accent); }
+
+        .badge-works {
+            background: var(--accent-soft);
+            color: var(--accent);
+        }
 
         /* ─── Detail Panel ─── */
         .detail-overlay {
             display: none;
             position: fixed;
             inset: 0;
-            background: rgba(0,0,0,0.6);
+            background: rgba(0, 0, 0, 0.6);
             z-index: 200;
             backdrop-filter: blur(4px);
         }
-        .detail-overlay.active { display: flex; align-items: center; justify-content: center; }
+
+        .detail-overlay.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
         .detail-panel {
             background: var(--bg-secondary);
             border: 1px solid var(--border);
@@ -228,13 +325,22 @@
             max-width: 800px;
             max-height: 90vh;
             overflow-y: auto;
-            box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+            box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
             animation: slideUp 0.3s ease;
         }
+
         @keyframes slideUp {
-            from { transform: translateY(40px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
+            from {
+                transform: translateY(40px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
         }
+
         .detail-header {
             display: flex;
             align-items: center;
@@ -243,10 +349,19 @@
             border-bottom: 1px solid var(--border);
             background: linear-gradient(135deg, var(--bg-card), var(--bg-secondary));
             border-radius: 16px 16px 0 0;
-            position: sticky; top: 0; z-index: 1;
+            position: sticky;
+            top: 0;
+            z-index: 1;
         }
-        .detail-header h2 { font-size: 1.2rem; font-weight: 700; }
-        .detail-body { padding: 24px; }
+
+        .detail-header h2 {
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        .detail-body {
+            padding: 24px;
+        }
 
         /* ─── Form ─── */
         .form-grid {
@@ -254,8 +369,17 @@
             grid-template-columns: 1fr 1fr;
             gap: 16px;
         }
-        .form-group { display: flex; flex-direction: column; gap: 6px; }
-        .form-group.full { grid-column: 1 / -1; }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group.full {
+            grid-column: 1 / -1;
+        }
+
         .form-group label {
             font-size: 0.78rem;
             font-weight: 600;
@@ -263,6 +387,7 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
+
         .form-group input,
         .form-group textarea,
         .form-group select {
@@ -275,13 +400,18 @@
             font-family: inherit;
             transition: border-color 0.2s;
         }
+
         .form-group input:focus,
         .form-group textarea:focus {
             outline: none;
             border-color: var(--accent);
             box-shadow: 0 0 0 3px var(--accent-soft);
         }
-        .form-group textarea { resize: vertical; min-height: 100px; }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
 
         .form-actions {
             display: flex;
@@ -298,17 +428,20 @@
             border-top: 1px solid var(--border);
             padding-top: 16px;
         }
+
         .works-section h3 {
             font-size: 0.95rem;
             font-weight: 600;
             margin-bottom: 12px;
             color: var(--text-secondary);
         }
+
         .works-list {
             max-height: 300px;
             overflow-y: auto;
             padding-right: 8px;
         }
+
         .work-item {
             display: flex;
             align-items: center;
@@ -320,14 +453,23 @@
             font-size: 0.85rem;
             transition: background 0.2s;
         }
-        .work-item:hover { background: var(--bg-hover); }
-        .work-title { flex: 1; font-weight: 500; }
+
+        .work-item:hover {
+            background: var(--bg-hover);
+        }
+
+        .work-title {
+            flex: 1;
+            font-weight: 500;
+        }
+
         .work-year {
             color: var(--text-muted);
             font-size: 0.78rem;
             margin-left: 8px;
             flex-shrink: 0;
         }
+
         .work-genre {
             color: var(--text-secondary);
             font-size: 0.72rem;
@@ -337,6 +479,7 @@
             margin-left: 8px;
             flex-shrink: 0;
         }
+
         .work-delete {
             background: none;
             border: none;
@@ -349,7 +492,10 @@
             transition: opacity 0.2s;
             margin-left: 8px;
         }
-        .work-item:hover .work-delete { opacity: 1; }
+
+        .work-item:hover .work-delete {
+            opacity: 1;
+        }
 
         /* ─── Toast Notification ─── */
         .toast {
@@ -365,22 +511,52 @@
             backdrop-filter: blur(10px);
             max-width: 400px;
         }
-        .toast-success { background: rgba(46,204,113,0.9); color: #fff; }
-        .toast-error { background: rgba(231,76,60,0.9); color: #fff; }
-        .toast-info { background: rgba(52,152,219,0.9); color: #fff; }
-        @keyframes toastIn { from { transform: translateY(20px); opacity: 0; } }
-        @keyframes toastOut { to { transform: translateY(20px); opacity: 0; } }
+
+        .toast-success {
+            background: rgba(46, 204, 113, 0.9);
+            color: #fff;
+        }
+
+        .toast-error {
+            background: rgba(231, 76, 60, 0.9);
+            color: #fff;
+        }
+
+        .toast-info {
+            background: rgba(52, 152, 219, 0.9);
+            color: #fff;
+        }
+
+        @keyframes toastIn {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+        }
+
+        @keyframes toastOut {
+            to {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+        }
 
         /* ─── Loading Spinner ─── */
         .spinner {
             display: inline-block;
-            width: 18px; height: 18px;
+            width: 18px;
+            height: 18px;
             border: 2px solid transparent;
             border-top-color: currentColor;
             border-radius: 50%;
             animation: spin 0.7s linear infinite;
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
 
         /* ─── Add Author Modal ─── */
         .add-form-inline {
@@ -392,7 +568,10 @@
             display: none;
             animation: slideUp 0.3s ease;
         }
-        .add-form-inline.active { display: block; }
+
+        .add-form-inline.active {
+            display: block;
+        }
 
         /* ─── Empty State ─── */
         .empty-state {
@@ -400,13 +579,29 @@
             padding: 60px 20px;
             color: var(--text-muted);
         }
-        .empty-state .icon { font-size: 3rem; margin-bottom: 16px; }
+
+        .empty-state .icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+        }
 
         /* ─── Scrollbar ─── */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: var(--bg-primary); }
-        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent);
+        }
 
         /* ─── Photo Upload ─── */
         .photo-upload-area {
@@ -415,17 +610,21 @@
             gap: 16px;
             margin-bottom: 20px;
         }
+
         .photo-preview {
-            width: 80px; height: 80px;
+            width: 80px;
+            height: 80px;
             border-radius: 50%;
             object-fit: cover;
             border: 3px solid var(--border);
             background: var(--bg-input);
         }
+
         .photo-upload-btn {
             position: relative;
             overflow: hidden;
         }
+
         .photo-upload-btn input[type="file"] {
             position: absolute;
             inset: 0;
@@ -441,233 +640,263 @@
             padding: 24px 0;
             align-items: center;
         }
-        .page-info { color: var(--text-secondary); font-size: 0.85rem; }
+
+        .page-info {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
 
         /* ─── Responsive ─── */
         @media (max-width: 768px) {
-            .header, .toolbar, .content { padding-left: 16px; padding-right: 16px; }
-            .author-grid { grid-template-columns: 1fr; }
-            .form-grid { grid-template-columns: 1fr; }
-            .detail-panel { width: 95vw; }
+
+            .header,
+            .toolbar,
+            .content {
+                padding-left: 16px;
+                padding-right: 16px;
+            }
+
+            .author-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .detail-panel {
+                width: 95vw;
+            }
         }
     </style>
 </head>
+
 <body>
 
-<!-- Header -->
-<div class="header">
-    <h1>📚 Admin: Gestión de Autores</h1>
-    <div class="stats">
-        Total: <strong id="totalAuthors">—</strong> autores
-    </div>
-</div>
-
-<!-- Toolbar -->
-<div class="toolbar">
-    <div class="search-box">
-        <input type="text" id="searchInput" placeholder="Buscar por nombre o nacionalidad..." autocomplete="off">
-    </div>
-    <button class="btn btn-primary" onclick="toggleAddForm()">➕ Nuevo Autor</button>
-    <button class="btn btn-outline" onclick="loadAuthors()">🔄 Refrescar</button>
-</div>
-
-<!-- Add Author Form -->
-<div class="content">
-    <div class="add-form-inline" id="addForm">
-        <h3 style="margin-bottom: 16px; color: var(--accent);">➕ Agregar Nuevo Autor</h3>
-        <div class="form-grid">
-            <div class="form-group">
-                <label>Nombre *</label>
-                <input type="text" id="newName" placeholder="Nombre completo del autor">
-            </div>
-            <div class="form-group">
-                <label>Nacionalidad</label>
-                <input type="text" id="newNationality" placeholder="Ej: Uruguaya">
-            </div>
-            <div class="form-group">
-                <label>Año Nacimiento</label>
-                <input type="number" id="newBirthYear" placeholder="Ej: 1960">
-            </div>
-            <div class="form-group">
-                <label>Año Fallecimiento</label>
-                <input type="number" id="newDeathYear" placeholder="Vacío si vive">
-            </div>
-            <div class="form-group">
-                <label>Géneros</label>
-                <input type="text" id="newGenres" placeholder="Ej: Novela histórica, Ensayo">
-            </div>
-            <div class="form-group full">
-                <label>Biografía</label>
-                <textarea id="newBio" rows="3" placeholder="Breve biografía..."></textarea>
-            </div>
-        </div>
-        <div style="display: flex; gap: 10px; margin-top: 16px;">
-            <button class="btn btn-success" onclick="createAuthor()">✅ Crear Autor</button>
-            <button class="btn btn-outline" onclick="toggleAddForm()">Cancelar</button>
-            <span style="flex:1"></span>
-            <button class="btn btn-warning" onclick="createAndEnrich()" title="Crear y luego enriquecer con IA">🤖 Crear + Enriquecer con IA</button>
+    <!-- Header -->
+    <div class="header">
+        <h1>📚 Admin: Gestión de Autores</h1>
+        <div class="stats">
+            Total: <strong id="totalAuthors">—</strong> autores
         </div>
     </div>
 
-    <!-- Author Grid -->
-    <div id="authorGrid" class="author-grid"></div>
-
-    <!-- Pagination -->
-    <div class="pagination" id="pagination" style="display:none;">
-        <button class="btn btn-outline btn-sm" id="prevBtn" onclick="prevPage()">← Anterior</button>
-        <span class="page-info" id="pageInfo"></span>
-        <button class="btn btn-outline btn-sm" id="nextBtn" onclick="nextPage()">Siguiente →</button>
-    </div>
-
-    <!-- Empty State -->
-    <div class="empty-state" id="emptyState" style="display:none;">
-        <div class="icon">📭</div>
-        <p>No se encontraron autores</p>
-    </div>
-</div>
-
-<!-- Detail Overlay -->
-<div class="detail-overlay" id="detailOverlay" onclick="closeDetailIf(event)">
-    <div class="detail-panel" id="detailPanel">
-        <div class="detail-header">
-            <h2 id="detailTitle">—</h2>
-            <div style="display:flex; gap:8px;">
-                <button class="btn btn-warning btn-sm" id="enrichBtn" onclick="enrichAuthor()">🤖 Enriquecer IA</button>
-                <button class="btn btn-danger btn-sm" onclick="deleteAuthor()">🗑️ Eliminar</button>
-                <button class="btn btn-outline btn-sm" onclick="closeDetail()">✕</button>
-            </div>
+    <!-- Toolbar -->
+    <div class="toolbar">
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Buscar por nombre o nacionalidad..." autocomplete="off">
         </div>
-        <div class="detail-body">
-            <!-- Photo Upload -->
-            <div class="photo-upload-area">
-                <img id="detailPhoto" class="photo-preview" src="" alt="Foto">
-                <div>
-                    <div class="photo-upload-btn">
-                        <button class="btn btn-outline btn-sm">📷 Cambiar Foto</button>
-                        <input type="file" accept="image/*" onchange="uploadPhoto(event)">
-                    </div>
-                    <p style="font-size:0.72rem; color:var(--text-muted); margin-top:6px;">Sube una foto del autor</p>
-                </div>
-            </div>
+        <button class="btn btn-primary" onclick="toggleAddForm()">➕ Nuevo Autor</button>
+        <button class="btn btn-warning" onclick="seedAll()" id="seedAllBtn"
+            title="Poblar base con ~200 autores famosos">🌱 Poblar Todos</button>
+        <button class="btn btn-outline" onclick="loadAuthors()">🔄 Refrescar</button>
+    </div>
 
-            <!-- Edit Form -->
+    <!-- Add Author Form -->
+    <div class="content">
+        <div class="add-form-inline" id="addForm">
+            <h3 style="margin-bottom: 16px; color: var(--accent);">➕ Agregar Nuevo Autor</h3>
             <div class="form-grid">
                 <div class="form-group">
-                    <label>Nombre</label>
-                    <input type="text" id="editName">
+                    <label>Nombre *</label>
+                    <input type="text" id="newName" placeholder="Nombre completo del autor">
                 </div>
                 <div class="form-group">
                     <label>Nacionalidad</label>
-                    <input type="text" id="editNationality">
+                    <input type="text" id="newNationality" placeholder="Ej: Uruguaya">
                 </div>
                 <div class="form-group">
                     <label>Año Nacimiento</label>
-                    <input type="number" id="editBirthYear">
+                    <input type="number" id="newBirthYear" placeholder="Ej: 1960">
                 </div>
                 <div class="form-group">
                     <label>Año Fallecimiento</label>
-                    <input type="number" id="editDeathYear">
+                    <input type="number" id="newDeathYear" placeholder="Vacío si vive">
                 </div>
-                <div class="form-group full">
+                <div class="form-group">
                     <label>Géneros</label>
-                    <input type="text" id="editGenres">
+                    <input type="text" id="newGenres" placeholder="Ej: Novela histórica, Ensayo">
                 </div>
                 <div class="form-group full">
                     <label>Biografía</label>
-                    <textarea id="editBio" rows="5"></textarea>
+                    <textarea id="newBio" rows="3" placeholder="Breve biografía..."></textarea>
                 </div>
             </div>
-
-            <div class="form-actions">
-                <button class="btn btn-success" onclick="saveAuthor()">💾 Guardar Cambios</button>
+            <div style="display: flex; gap: 10px; margin-top: 16px;">
+                <button class="btn btn-success" onclick="createAuthor()">✅ Crear Autor</button>
+                <button class="btn btn-outline" onclick="toggleAddForm()">Cancelar</button>
+                <span style="flex:1"></span>
+                <button class="btn btn-warning" onclick="createAndEnrich()" title="Crear y luego enriquecer con IA">🤖
+                    Crear + Enriquecer con IA</button>
             </div>
+        </div>
 
-            <!-- Works Section -->
-            <div class="works-section">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
-                    <h3>📖 Bibliografía (<span id="worksCount">0</span> obras)</h3>
-                    <button class="btn btn-outline btn-sm" onclick="toggleAddWork()">➕ Agregar Obra</button>
+        <!-- Author Grid -->
+        <div id="authorGrid" class="author-grid"></div>
+
+        <!-- Pagination -->
+        <div class="pagination" id="pagination" style="display:none;">
+            <button class="btn btn-outline btn-sm" id="prevBtn" onclick="prevPage()">← Anterior</button>
+            <span class="page-info" id="pageInfo"></span>
+            <button class="btn btn-outline btn-sm" id="nextBtn" onclick="nextPage()">Siguiente →</button>
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-state" id="emptyState" style="display:none;">
+            <div class="icon">📭</div>
+            <p>No se encontraron autores</p>
+        </div>
+    </div>
+
+    <!-- Detail Overlay -->
+    <div class="detail-overlay" id="detailOverlay" onclick="closeDetailIf(event)">
+        <div class="detail-panel" id="detailPanel">
+            <div class="detail-header">
+                <h2 id="detailTitle">—</h2>
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <button class="btn btn-warning btn-sm" id="enrichBtn" onclick="enrichAuthor()">🤖 Enriquecer
+                        IA</button>
+                    <button class="btn btn-info btn-sm" id="reseedBtn" onclick="reseedBibliography()"
+                        style="background:var(--info);color:#fff;">📚 Re-poblar Obras</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteAuthor()">🗑️ Eliminar</button>
+                    <button class="btn btn-outline btn-sm" onclick="closeDetail()">✕</button>
                 </div>
-
-                <!-- Add Work inline -->
-                <div id="addWorkForm" style="display:none; margin-bottom: 12px;">
-                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                        <input type="text" id="newWorkTitle" placeholder="Título" style="flex:2; padding:8px 12px; background:var(--bg-input); border:1px solid var(--border); border-radius:8px; color:var(--text-primary); font-size:0.85rem;">
-                        <input type="number" id="newWorkYear" placeholder="Año" style="width:80px; padding:8px 12px; background:var(--bg-input); border:1px solid var(--border); border-radius:8px; color:var(--text-primary); font-size:0.85rem;">
-                        <input type="text" id="newWorkGenre" placeholder="Género" style="flex:1; padding:8px 12px; background:var(--bg-input); border:1px solid var(--border); border-radius:8px; color:var(--text-primary); font-size:0.85rem;">
-                        <button class="btn btn-success btn-sm" onclick="addWork()">✅</button>
-                        <button class="btn btn-outline btn-sm" onclick="toggleAddWork()">✕</button>
+            </div>
+            <div class="detail-body">
+                <!-- Photo Upload -->
+                <div class="photo-upload-area">
+                    <img id="detailPhoto" class="photo-preview" src="" alt="Foto">
+                    <div>
+                        <div class="photo-upload-btn">
+                            <button class="btn btn-outline btn-sm">📷 Cambiar Foto</button>
+                            <input type="file" accept="image/*" onchange="uploadPhoto(event)">
+                        </div>
+                        <p style="font-size:0.72rem; color:var(--text-muted); margin-top:6px;">Sube una foto del autor
+                        </p>
                     </div>
                 </div>
 
-                <div class="works-list" id="worksList"></div>
+                <!-- Edit Form -->
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Nombre</label>
+                        <input type="text" id="editName">
+                    </div>
+                    <div class="form-group">
+                        <label>Nacionalidad</label>
+                        <input type="text" id="editNationality">
+                    </div>
+                    <div class="form-group">
+                        <label>Año Nacimiento</label>
+                        <input type="number" id="editBirthYear">
+                    </div>
+                    <div class="form-group">
+                        <label>Año Fallecimiento</label>
+                        <input type="number" id="editDeathYear">
+                    </div>
+                    <div class="form-group full">
+                        <label>Géneros</label>
+                        <input type="text" id="editGenres">
+                    </div>
+                    <div class="form-group full">
+                        <label>Biografía</label>
+                        <textarea id="editBio" rows="5"></textarea>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button class="btn btn-success" onclick="saveAuthor()">💾 Guardar Cambios</button>
+                </div>
+
+                <!-- Works Section -->
+                <div class="works-section">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
+                        <h3>📖 Bibliografía (<span id="worksCount">0</span> obras)</h3>
+                        <button class="btn btn-outline btn-sm" onclick="toggleAddWork()">➕ Agregar Obra</button>
+                    </div>
+
+                    <!-- Add Work inline -->
+                    <div id="addWorkForm" style="display:none; margin-bottom: 12px;">
+                        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                            <input type="text" id="newWorkTitle" placeholder="Título"
+                                style="flex:2; padding:8px 12px; background:var(--bg-input); border:1px solid var(--border); border-radius:8px; color:var(--text-primary); font-size:0.85rem;">
+                            <input type="number" id="newWorkYear" placeholder="Año"
+                                style="width:80px; padding:8px 12px; background:var(--bg-input); border:1px solid var(--border); border-radius:8px; color:var(--text-primary); font-size:0.85rem;">
+                            <input type="text" id="newWorkGenre" placeholder="Género"
+                                style="flex:1; padding:8px 12px; background:var(--bg-input); border:1px solid var(--border); border-radius:8px; color:var(--text-primary); font-size:0.85rem;">
+                            <button class="btn btn-success btn-sm" onclick="addWork()">✅</button>
+                            <button class="btn btn-outline btn-sm" onclick="toggleAddWork()">✕</button>
+                        </div>
+                    </div>
+
+                    <div class="works-list" id="worksList"></div>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<script>
-    // ─── Config ───
-    const API_BASE = window.location.origin + '/api/books/admin-authors/';
-    const ADMIN_KEY = '{{ admin_key }}';
+    <script>
+        // ─── Config ───
+        const API_BASE = window.location.origin + '/api/books/admin-authors/';
+        const ADMIN_KEY = '{{ admin_key }}';
 
-    let currentPage = 0;
-    let currentSearch = '';
-    let currentAuthorId = null;
-    let totalAuthors = 0;
-    const PAGE_SIZE = 50;
+        let currentPage = 0;
+        let currentSearch = '';
+        let currentAuthorId = null;
+        let totalAuthors = 0;
+        const PAGE_SIZE = 50;
 
-    // ─── API Helpers ───
-    async function api(path, options = {}) {
-        const sep = path.includes('?') ? '&' : '?';
-        const url = API_BASE + path + sep + 'key=' + ADMIN_KEY;
-        const res = await fetch(url, {
-            ...options,
-            headers: {
-                ...(options.headers || {}),
-            }
-        });
-        return res;
-    }
-
-    async function apiJson(path, method = 'GET', body = null) {
-        const opts = { method };
-        if (body) {
-            opts.headers = { 'Content-Type': 'application/json' };
-            opts.body = JSON.stringify(body);
+        // ─── API Helpers ───
+        async function api(path, options = {}) {
+            const sep = path.includes('?') ? '&' : '?';
+            const url = API_BASE + path + sep + 'key=' + ADMIN_KEY;
+            const res = await fetch(url, {
+                ...options,
+                headers: {
+                    ...(options.headers || {}),
+                }
+            });
+            return res;
         }
-        const res = await api(path, opts);
-        return await res.json();
-    }
 
-    // ─── Toast ───
-    function toast(msg, type = 'success') {
-        const el = document.createElement('div');
-        el.className = 'toast toast-' + type;
-        el.textContent = msg;
-        document.body.appendChild(el);
-        setTimeout(() => el.remove(), 3000);
-    }
-
-    // ─── Load Authors ───
-    async function loadAuthors() {
-        const grid = document.getElementById('authorGrid');
-        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;"><div class="spinner" style="width:32px;height:32px;border-width:3px;color:var(--accent);"></div><p style="margin-top:12px;color:var(--text-muted);">Cargando autores...</p></div>';
-
-        try {
-            const data = await apiJson(`?search=${encodeURIComponent(currentSearch)}&page=${currentPage}&page_size=${PAGE_SIZE}`);
-            totalAuthors = data.total;
-            document.getElementById('totalAuthors').textContent = totalAuthors;
-
-            if (data.authors.length === 0) {
-                grid.innerHTML = '';
-                document.getElementById('emptyState').style.display = 'block';
-                document.getElementById('pagination').style.display = 'none';
-                return;
+        async function apiJson(path, method = 'GET', body = null) {
+            const opts = { method };
+            if (body) {
+                opts.headers = { 'Content-Type': 'application/json' };
+                opts.body = JSON.stringify(body);
             }
+            const res = await api(path, opts);
+            return await res.json();
+        }
 
-            document.getElementById('emptyState').style.display = 'none';
-            grid.innerHTML = data.authors.map(a => `
+        // ─── Toast ───
+        function toast(msg, type = 'success') {
+            const el = document.createElement('div');
+            el.className = 'toast toast-' + type;
+            el.textContent = msg;
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 3000);
+        }
+
+        // ─── Load Authors ───
+        async function loadAuthors() {
+            const grid = document.getElementById('authorGrid');
+            grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;"><div class="spinner" style="width:32px;height:32px;border-width:3px;color:var(--accent);"></div><p style="margin-top:12px;color:var(--text-muted);">Cargando autores...</p></div>';
+
+            try {
+                const data = await apiJson(`?search=${encodeURIComponent(currentSearch)}&page=${currentPage}&page_size=${PAGE_SIZE}`);
+                totalAuthors = data.total;
+                document.getElementById('totalAuthors').textContent = totalAuthors;
+
+                if (data.authors.length === 0) {
+                    grid.innerHTML = '';
+                    document.getElementById('emptyState').style.display = 'block';
+                    document.getElementById('pagination').style.display = 'none';
+                    return;
+                }
+
+                document.getElementById('emptyState').style.display = 'none';
+                grid.innerHTML = data.authors.map(a => `
                 <div class="author-card" onclick="openDetail(${a.id})">
                     <div class="author-row">
                         <img class="author-photo" src="${a.photo_url || 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%2260%22 x=%2225%22 font-size=%2250%22>👤</text></svg>'}" alt="${a.name}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%2260%22 x=%2225%22 font-size=%2250%22>👤</text></svg>'">
@@ -683,124 +912,124 @@
                 </div>
             `).join('');
 
-            // Pagination
-            const totalPages = Math.ceil(totalAuthors / PAGE_SIZE);
-            const pg = document.getElementById('pagination');
-            if (totalPages > 1) {
-                pg.style.display = 'flex';
-                document.getElementById('pageInfo').textContent = `Página ${currentPage + 1} de ${totalPages}`;
-                document.getElementById('prevBtn').disabled = currentPage === 0;
-                document.getElementById('nextBtn').disabled = currentPage >= totalPages - 1;
-            } else {
-                pg.style.display = 'none';
+                // Pagination
+                const totalPages = Math.ceil(totalAuthors / PAGE_SIZE);
+                const pg = document.getElementById('pagination');
+                if (totalPages > 1) {
+                    pg.style.display = 'flex';
+                    document.getElementById('pageInfo').textContent = `Página ${currentPage + 1} de ${totalPages}`;
+                    document.getElementById('prevBtn').disabled = currentPage === 0;
+                    document.getElementById('nextBtn').disabled = currentPage >= totalPages - 1;
+                } else {
+                    pg.style.display = 'none';
+                }
+            } catch (e) {
+                grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--danger);">Error cargando autores: ' + e.message + '</div>';
             }
-        } catch (e) {
-            grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--danger);">Error cargando autores: ' + e.message + '</div>';
         }
-    }
 
-    function prevPage() { if (currentPage > 0) { currentPage--; loadAuthors(); } }
-    function nextPage() { currentPage++; loadAuthors(); }
+        function prevPage() { if (currentPage > 0) { currentPage--; loadAuthors(); } }
+        function nextPage() { currentPage++; loadAuthors(); }
 
-    // ─── Search (debounced) ───
-    let searchTimeout;
-    document.getElementById('searchInput').addEventListener('input', (e) => {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
-            currentSearch = e.target.value.trim();
-            currentPage = 0;
-            loadAuthors();
-        }, 400);
-    });
+        // ─── Search (debounced) ───
+        let searchTimeout;
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                currentSearch = e.target.value.trim();
+                currentPage = 0;
+                loadAuthors();
+            }, 400);
+        });
 
-    // ─── Add Author Form ───
-    function toggleAddForm() {
-        document.getElementById('addForm').classList.toggle('active');
-    }
+        // ─── Add Author Form ───
+        function toggleAddForm() {
+            document.getElementById('addForm').classList.toggle('active');
+        }
 
-    async function createAuthor() {
-        const name = document.getElementById('newName').value.trim();
-        if (!name) { toast('El nombre es obligatorio', 'error'); return; }
+        async function createAuthor() {
+            const name = document.getElementById('newName').value.trim();
+            if (!name) { toast('El nombre es obligatorio', 'error'); return; }
 
-        const body = {
-            name,
-            nationality: document.getElementById('newNationality').value.trim(),
-            bio: document.getElementById('newBio').value.trim(),
-            genres: document.getElementById('newGenres').value.trim(),
-            birth_year: document.getElementById('newBirthYear').value || null,
-            death_year: document.getElementById('newDeathYear').value || null,
-        };
+            const body = {
+                name,
+                nationality: document.getElementById('newNationality').value.trim(),
+                bio: document.getElementById('newBio').value.trim(),
+                genres: document.getElementById('newGenres').value.trim(),
+                birth_year: document.getElementById('newBirthYear').value || null,
+                death_year: document.getElementById('newDeathYear').value || null,
+            };
 
-        const data = await apiJson('', 'POST', body);
-        if (data.error) {
-            toast(data.error, 'error');
-        } else {
-            toast(`"${name}" creado correctamente`);
+            const data = await apiJson('', 'POST', body);
+            if (data.error) {
+                toast(data.error, 'error');
+            } else {
+                toast(`"${name}" creado correctamente`);
+                toggleAddForm();
+                // Clear form
+                ['newName', 'newNationality', 'newBio', 'newGenres', 'newBirthYear', 'newDeathYear']
+                    .forEach(id => document.getElementById(id).value = '');
+                loadAuthors();
+            }
+        }
+
+        async function createAndEnrich() {
+            const name = document.getElementById('newName').value.trim();
+            if (!name) { toast('El nombre es obligatorio', 'error'); return; }
+
+            // First create
+            const body = { name };
+            const data = await apiJson('', 'POST', body);
+            if (data.error) {
+                toast(data.error, 'error');
+                return;
+            }
+
+            // Then trigger enrichment
+            const enrichData = await apiJson(`${data.id}/enrich/`, 'POST');
+            toast(`"${name}" creado. Enriquecimiento IA iniciado en background.`, 'info');
             toggleAddForm();
-            // Clear form
-            ['newName','newNationality','newBio','newGenres','newBirthYear','newDeathYear']
-                .forEach(id => document.getElementById(id).value = '');
+            document.getElementById('newName').value = '';
             loadAuthors();
         }
-    }
 
-    async function createAndEnrich() {
-        const name = document.getElementById('newName').value.trim();
-        if (!name) { toast('El nombre es obligatorio', 'error'); return; }
+        // ─── Detail Panel ───
+        async function openDetail(id) {
+            currentAuthorId = id;
+            const overlay = document.getElementById('detailOverlay');
+            overlay.classList.add('active');
 
-        // First create
-        const body = { name };
-        const data = await apiJson('', 'POST', body);
-        if (data.error) {
-            toast(data.error, 'error');
-            return;
+            // Show loading
+            document.getElementById('detailTitle').textContent = 'Cargando...';
+
+            const data = await apiJson(`${id}/`);
+            if (data.error) {
+                toast(data.error, 'error');
+                closeDetail();
+                return;
+            }
+
+            document.getElementById('detailTitle').textContent = data.name;
+            document.getElementById('detailPhoto').src = data.photo_url || '';
+            document.getElementById('editName').value = data.name || '';
+            document.getElementById('editNationality').value = data.nationality || '';
+            document.getElementById('editBirthYear').value = data.birth_year || '';
+            document.getElementById('editDeathYear').value = data.death_year || '';
+            document.getElementById('editGenres').value = data.genres || '';
+            document.getElementById('editBio').value = data.bio || '';
+            document.getElementById('worksCount').textContent = data.works_count || 0;
+
+            // Render works
+            renderWorks(data.works || []);
         }
 
-        // Then trigger enrichment
-        const enrichData = await apiJson(`${data.id}/enrich/`, 'POST');
-        toast(`"${name}" creado. Enriquecimiento IA iniciado en background.`, 'info');
-        toggleAddForm();
-        document.getElementById('newName').value = '';
-        loadAuthors();
-    }
-
-    // ─── Detail Panel ───
-    async function openDetail(id) {
-        currentAuthorId = id;
-        const overlay = document.getElementById('detailOverlay');
-        overlay.classList.add('active');
-
-        // Show loading
-        document.getElementById('detailTitle').textContent = 'Cargando...';
-
-        const data = await apiJson(`${id}/`);
-        if (data.error) {
-            toast(data.error, 'error');
-            closeDetail();
-            return;
-        }
-
-        document.getElementById('detailTitle').textContent = data.name;
-        document.getElementById('detailPhoto').src = data.photo_url || '';
-        document.getElementById('editName').value = data.name || '';
-        document.getElementById('editNationality').value = data.nationality || '';
-        document.getElementById('editBirthYear').value = data.birth_year || '';
-        document.getElementById('editDeathYear').value = data.death_year || '';
-        document.getElementById('editGenres').value = data.genres || '';
-        document.getElementById('editBio').value = data.bio || '';
-        document.getElementById('worksCount').textContent = data.works_count || 0;
-
-        // Render works
-        renderWorks(data.works || []);
-    }
-
-    function renderWorks(works) {
-        const list = document.getElementById('worksList');
-        if (works.length === 0) {
-            list.innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem;padding:12px;">Sin obras registradas</p>';
-            return;
-        }
-        list.innerHTML = works.map(w => `
+        function renderWorks(works) {
+            const list = document.getElementById('worksList');
+            if (works.length === 0) {
+                list.innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem;padding:12px;">Sin obras registradas</p>';
+                return;
+            }
+            list.innerHTML = works.map(w => `
             <div class="work-item">
                 <span class="work-title">${w.title}</span>
                 ${w.year ? '<span class="work-year">' + w.year + '</span>' : ''}
@@ -808,153 +1037,245 @@
                 <button class="work-delete" onclick="deleteWork(${w.id}, event)" title="Eliminar obra">🗑️</button>
             </div>
         `).join('');
-    }
-
-    function closeDetail() {
-        document.getElementById('detailOverlay').classList.remove('active');
-        currentAuthorId = null;
-    }
-
-    function closeDetailIf(e) {
-        if (e.target === document.getElementById('detailOverlay')) closeDetail();
-    }
-
-    // ─── Save Author ───
-    async function saveAuthor() {
-        if (!currentAuthorId) return;
-
-        const body = {
-            name: document.getElementById('editName').value.trim(),
-            nationality: document.getElementById('editNationality').value.trim(),
-            birth_year: document.getElementById('editBirthYear').value || null,
-            death_year: document.getElementById('editDeathYear').value || null,
-            genres: document.getElementById('editGenres').value.trim(),
-            bio: document.getElementById('editBio').value.trim(),
-        };
-
-        const data = await apiJson(`${currentAuthorId}/`, 'PUT', body);
-        if (data.error) {
-            toast(data.error, 'error');
-        } else {
-            toast('Autor actualizado correctamente');
-            document.getElementById('detailTitle').textContent = body.name;
-            loadAuthors();
         }
-    }
 
-    // ─── Delete Author ───
-    async function deleteAuthor() {
-        if (!currentAuthorId) return;
-        const name = document.getElementById('editName').value;
-        if (!confirm(`¿Estás seguro de eliminar a "${name}" y todas sus obras?`)) return;
-
-        const data = await apiJson(`${currentAuthorId}/`, 'DELETE');
-        if (data.error) {
-            toast(data.error, 'error');
-        } else {
-            toast(`"${name}" eliminado`, 'info');
-            closeDetail();
-            loadAuthors();
+        function closeDetail() {
+            document.getElementById('detailOverlay').classList.remove('active');
+            currentAuthorId = null;
         }
-    }
 
-    // ─── Enrich Author ───
-    async function enrichAuthor() {
-        if (!currentAuthorId) return;
-        const btn = document.getElementById('enrichBtn');
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner"></span> Enriqueciendo...';
+        function closeDetailIf(e) {
+            if (e.target === document.getElementById('detailOverlay')) closeDetail();
+        }
 
-        const data = await apiJson(`${currentAuthorId}/enrich/`, 'POST');
-        toast(data.message || 'Enriquecimiento iniciado', 'info');
+        // ─── Save Author ───
+        async function saveAuthor() {
+            if (!currentAuthorId) return;
 
-        btn.disabled = false;
-        btn.innerHTML = '🤖 Enriquecer IA';
+            const body = {
+                name: document.getElementById('editName').value.trim(),
+                nationality: document.getElementById('editNationality').value.trim(),
+                birth_year: document.getElementById('editBirthYear').value || null,
+                death_year: document.getElementById('editDeathYear').value || null,
+                genres: document.getElementById('editGenres').value.trim(),
+                bio: document.getElementById('editBio').value.trim(),
+            };
 
-        // Reload detail after a delay (enrichment is async)
-        setTimeout(() => openDetail(currentAuthorId), 5000);
-    }
+            const data = await apiJson(`${currentAuthorId}/`, 'PUT', body);
+            if (data.error) {
+                toast(data.error, 'error');
+            } else {
+                toast('Autor actualizado correctamente');
+                document.getElementById('detailTitle').textContent = body.name;
+                loadAuthors();
+            }
+        }
 
-    // ─── Upload Photo ───
-    async function uploadPhoto(event) {
-        if (!currentAuthorId) return;
-        const file = event.target.files[0];
-        if (!file) return;
+        // ─── Delete Author ───
+        async function deleteAuthor() {
+            if (!currentAuthorId) return;
+            const name = document.getElementById('editName').value;
+            if (!confirm(`¿Estás seguro de eliminar a "${name}" y todas sus obras?`)) return;
 
-        const formData = new FormData();
-        formData.append('photo', file);
+            const data = await apiJson(`${currentAuthorId}/`, 'DELETE');
+            if (data.error) {
+                toast(data.error, 'error');
+            } else {
+                toast(`"${name}" eliminado`, 'info');
+                closeDetail();
+                loadAuthors();
+            }
+        }
 
-        toast('Subiendo foto...', 'info');
+        // ─── Enrich Author ───
+        async function enrichAuthor() {
+            if (!currentAuthorId) return;
+            const btn = document.getElementById('enrichBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Enriqueciendo...';
 
-        const res = await api(`${currentAuthorId}/photo/`, {
-            method: 'POST',
-            body: formData,
+            const data = await apiJson(`${currentAuthorId}/enrich/`, 'POST');
+            toast(data.message || 'Enriquecimiento iniciado', 'info');
+
+            btn.disabled = false;
+            btn.innerHTML = '🤖 Enriquecer IA';
+
+            // Reload detail after a delay (enrichment is async)
+            setTimeout(() => openDetail(currentAuthorId), 5000);
+        }
+
+        // ─── Upload Photo ───
+        async function uploadPhoto(event) {
+            if (!currentAuthorId) return;
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('photo', file);
+
+            toast('Subiendo foto...', 'info');
+
+            const res = await api(`${currentAuthorId}/photo/`, {
+                method: 'POST',
+                body: formData,
+            });
+            const data = await res.json();
+
+            if (data.error) {
+                toast(data.error, 'error');
+            } else {
+                toast('Foto actualizada');
+                document.getElementById('detailPhoto').src = data.photo_url;
+                loadAuthors();
+            }
+        }
+
+        // ─── Works Management ───
+        function toggleAddWork() {
+            const f = document.getElementById('addWorkForm');
+            f.style.display = f.style.display === 'none' ? 'flex' : 'none';
+        }
+
+        async function addWork() {
+            if (!currentAuthorId) return;
+            const title = document.getElementById('newWorkTitle').value.trim();
+            if (!title) { toast('El título es obligatorio', 'error'); return; }
+
+            const body = {
+                title,
+                year: document.getElementById('newWorkYear').value || null,
+                genre: document.getElementById('newWorkGenre').value.trim(),
+            };
+
+            const data = await apiJson(`${currentAuthorId}/works/`, 'POST', body);
+            if (data.error) {
+                toast(data.error, 'error');
+            } else {
+                toast(`"${title}" agregado`);
+                document.getElementById('newWorkTitle').value = '';
+                document.getElementById('newWorkYear').value = '';
+                document.getElementById('newWorkGenre').value = '';
+                toggleAddWork();
+                openDetail(currentAuthorId);
+            }
+        }
+
+        async function deleteWork(workId, event) {
+            event.stopPropagation();
+            if (!confirm('¿Eliminar esta obra?')) return;
+
+            const data = await apiJson(`${currentAuthorId}/works/?work_id=${workId}`, 'DELETE');
+            if (data.error) {
+                toast(data.error, 'error');
+            } else {
+                toast('Obra eliminada');
+                openDetail(currentAuthorId);
+            }
+        }
+
+        // ─── Re-seed Bibliography (delete all works, then re-enrich) ───
+        async function reseedBibliography() {
+            if (!currentAuthorId) return;
+            const name = document.getElementById('editName').value;
+            const worksCount = document.getElementById('worksCount').textContent;
+            if (!confirm(`¿Re-poblar la bibliografía de "${name}"?\n\nEsto eliminará las ${worksCount} obras actuales y generará una bibliografía COMPLETA con IA.\n\nPara autores prolíficos como Agatha Christie, esto puede tardar 1-2 minutos.`)) return;
+
+            const btn = document.getElementById('reseedBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Eliminando obras...';
+
+            // Step 1: Delete all existing works
+            const detail = await apiJson(`${currentAuthorId}/`);
+            const works = detail.works || [];
+            for (const w of works) {
+                await apiJson(`${currentAuthorId}/works/?work_id=${w.id}`, 'DELETE');
+            }
+
+            // Step 2: Trigger re-enrichment
+            btn.innerHTML = '<span class="spinner"></span> Enriqueciendo...';
+            const data = await apiJson(`${currentAuthorId}/enrich/`, 'POST');
+            toast(`Bibliografía de "${name}" siendo re-generada con IA. Esto tarda 1-2 min.`, 'info');
+
+            btn.disabled = false;
+            btn.innerHTML = '📚 Re-poblar Obras';
+
+            // Poll for completion
+            let pollCount = 0;
+            const pollInterval = setInterval(async () => {
+                pollCount++;
+                const updated = await apiJson(`${currentAuthorId}/`);
+                document.getElementById('worksCount').textContent = updated.works_count || 0;
+                renderWorks(updated.works || []);
+                if (updated.works_count > parseInt(worksCount) || pollCount > 24) {
+                    clearInterval(pollInterval);
+                    if (updated.works_count > parseInt(worksCount)) {
+                        toast(`✅ "${name}" ahora tiene ${updated.works_count} obras!`);
+                    }
+                    loadAuthors();
+                }
+            }, 5000);
+        }
+
+        // ─── Seed All Famous Authors ───
+        async function seedAll() {
+            const SEED_URL = window.location.origin + '/api/books/seed-authors/';
+            const btn = document.getElementById('seedAllBtn');
+
+            // Check current status first
+            const statusRes = await fetch(SEED_URL + '?key=' + ADMIN_KEY);
+            const status = await statusRes.json();
+
+            if (status.running) {
+                toast(`Seeding ya en curso: ${status.processed}/${status.total} — ${status.current}`, 'info');
+                startSeedPolling();
+                return;
+            }
+
+            if (!confirm(`¿Poblar la base con ~200 autores famosos?\n\nAutores existentes: ${status.total_cached_in_db}\nSe agregarán solo los que no existan aún.\n\nEsto puede tardar 15-30 minutos en background.`)) return;
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Iniciando...';
+
+            const res = await fetch(SEED_URL + '?key=' + ADMIN_KEY, { method: 'POST' });
+            const data = await res.json();
+            toast(data.message || 'Seeding iniciado', 'info');
+
+            startSeedPolling();
+        }
+
+        function startSeedPolling() {
+            const SEED_URL = window.location.origin + '/api/books/seed-authors/';
+            const btn = document.getElementById('seedAllBtn');
+
+            const pollInterval = setInterval(async () => {
+                const res = await fetch(SEED_URL + '?key=' + ADMIN_KEY);
+                const status = await res.json();
+
+                if (status.running) {
+                    btn.disabled = true;
+                    btn.innerHTML = `⏳ ${status.processed}/${status.total} — ${status.current}`;
+                } else {
+                    btn.disabled = false;
+                    btn.innerHTML = '🌱 Poblar Todos';
+                    clearInterval(pollInterval);
+                    toast(`Seeding completado: ${status.total_cached_in_db} autores en total`);
+                    loadAuthors();
+                }
+            }, 10000);
+        }
+
+        // ─── Keyboard shortcuts ───
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeDetail();
+            if (e.key === '/' && !e.ctrlKey && !e.metaKey) {
+                e.preventDefault();
+                document.getElementById('searchInput').focus();
+            }
         });
-        const data = await res.json();
 
-        if (data.error) {
-            toast(data.error, 'error');
-        } else {
-            toast('Foto actualizada');
-            document.getElementById('detailPhoto').src = data.photo_url;
-            loadAuthors();
-        }
-    }
-
-    // ─── Works Management ───
-    function toggleAddWork() {
-        const f = document.getElementById('addWorkForm');
-        f.style.display = f.style.display === 'none' ? 'flex' : 'none';
-    }
-
-    async function addWork() {
-        if (!currentAuthorId) return;
-        const title = document.getElementById('newWorkTitle').value.trim();
-        if (!title) { toast('El título es obligatorio', 'error'); return; }
-
-        const body = {
-            title,
-            year: document.getElementById('newWorkYear').value || null,
-            genre: document.getElementById('newWorkGenre').value.trim(),
-        };
-
-        const data = await apiJson(`${currentAuthorId}/works/`, 'POST', body);
-        if (data.error) {
-            toast(data.error, 'error');
-        } else {
-            toast(`"${title}" agregado`);
-            document.getElementById('newWorkTitle').value = '';
-            document.getElementById('newWorkYear').value = '';
-            document.getElementById('newWorkGenre').value = '';
-            toggleAddWork();
-            openDetail(currentAuthorId);
-        }
-    }
-
-    async function deleteWork(workId, event) {
-        event.stopPropagation();
-        if (!confirm('¿Eliminar esta obra?')) return;
-
-        const data = await apiJson(`${currentAuthorId}/works/?work_id=${workId}`, 'DELETE');
-        if (data.error) {
-            toast(data.error, 'error');
-        } else {
-            toast('Obra eliminada');
-            openDetail(currentAuthorId);
-        }
-    }
-
-    // ─── Keyboard shortcuts ───
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') closeDetail();
-        if (e.key === '/' && !e.ctrlKey && !e.metaKey) {
-            e.preventDefault();
-            document.getElementById('searchInput').focus();
-        }
-    });
-
-    // ─── Init ───
-    loadAuthors();
-</script>
+        // ─── Init ───
+        loadAuthors();
+    </script>
 </body>
+
 </html>

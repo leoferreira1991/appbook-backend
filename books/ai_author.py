@@ -94,16 +94,11 @@ def _generate_author_profile(author_name: str) -> dict:
                 all_works[normalize(title)] = w
         
         # ── Step 2: Iterative loop to fetch remaining works ──
-        MAX_ITERATIONS = 8
-        MIN_NEW_WORKS = 3  # Stop if fewer than 3 new works returned
+        MAX_ITERATIONS = 12
+        MIN_NEW_WORKS = 1  # Stop only when GPT returns 0 new works
         
         for iteration in range(MAX_ITERATIONS):
             known_titles = [w.get('title', '') for w in all_works.values()]
-            
-            # If we have fewer than 15, probably not a prolific author — one more try
-            # If we have 15+, keep going until GPT has nothing more to add
-            if iteration > 0 and len(known_titles) < 15:
-                break
             
             continuation_response = client.chat.completions.create(
                 model='gpt-4o-mini',
@@ -111,6 +106,7 @@ def _generate_author_profile(author_name: str) -> dict:
                     {'role': 'system', 'content': (
                         "Eres un experto bibliotecario. Tu tarea es completar la bibliografía de un autor.\n"
                         "Te voy a dar una lista de obras que YA TENGO. Necesito que me des las que FALTAN.\n"
+                        "IMPORTANTE: Sé exhaustivo. Si el autor tiene 60+ obras y solo veo 20, HAY MUCHAS FALTANTES.\n"
                         "Devuelve JSON con un array 'works' que contenga SOLO las obras que NO están en mi lista.\n"
                         "Si NO falta ninguna obra, devuelve {\"works\": []}.\n"
                         "Cada obra: {\"title\": \"...\", \"year\": 1920, \"genre\": \"...\", "
@@ -144,7 +140,7 @@ def _generate_author_profile(author_name: str) -> dict:
             
             print(f"  [{author_name}] Iteration {iteration + 1}: +{new_count} new works (total: {len(all_works)})")
             
-            # Stop if we got fewer than MIN_NEW_WORKS new unique works
+            # Stop if we got zero genuinely new works
             if new_count < MIN_NEW_WORKS:
                 break
         
