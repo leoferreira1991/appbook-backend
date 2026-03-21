@@ -12,6 +12,11 @@ from .bug_report_views import BugReportView, AdminBugReportsView, AIStatusView
 from .public_library_views import PublicLibraryView
 from .ai_author import AIAuthorProfileView, FollowAuthorView
 from .seed_authors_view import SeedAuthorsView
+from .admin_authors_views import (
+    AdminAuthorsListView, AdminAuthorDetailView,
+    AdminAuthorEnrichView, AdminAuthorPhotoView, AdminAuthorWorkView,
+)
+from .admin_panel import AdminPanelView
 
 router = DefaultRouter()
 router.register(r'authors', AuthorViewSet)
@@ -42,5 +47,13 @@ urlpatterns = [
     path('follow-author/', FollowAuthorView.as_view(), name='follow-author'),
     path('seed-authors/', SeedAuthorsView.as_view(), name='seed-authors'),
     path('public-library/<int:user_id>/', PublicLibraryView.as_view(), name='public-library'),
+    # Admin author management
+    path('admin-authors/', AdminAuthorsListView.as_view(), name='admin-authors-list'),
+    path('admin-authors/<int:pk>/', AdminAuthorDetailView.as_view(), name='admin-author-detail'),
+    path('admin-authors/<int:pk>/enrich/', AdminAuthorEnrichView.as_view(), name='admin-author-enrich'),
+    path('admin-authors/<int:pk>/photo/', AdminAuthorPhotoView.as_view(), name='admin-author-photo'),
+    path('admin-authors/<int:pk>/works/', AdminAuthorWorkView.as_view(), name='admin-author-works'),
+    # Admin web panel
+    path('admin-panel/', AdminPanelView.as_view(), name='admin-panel'),
     path('', include(router.urls)),
 ]

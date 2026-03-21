@@ -51,6 +51,15 @@ def _generate_author_profile(author_name: str) -> dict:
         "7. Si el autor está vivo, death_year debe ser null.\n"
         "8. Incluye: novelas, novelas cortas publicadas como libro, colecciones de cuentos, "
         "y obras de teatro publicadas. NO incluyas cuentos sueltos no publicados como libro.\n\n"
+        "⚠️ REGLAS ANTI-ALUCINACIÓN (MUY IMPORTANTE):\n"
+        "9. VERIFICA la nacionalidad del autor. NO inventes nacionalidades. "
+        "Si el autor nació en Uruguay es Uruguayo, si nació en Argentina es Argentino, etc. "
+        "No confundas autores de distintos países.\n"
+        "10. Si NO estás seguro de un dato biográfico (año, nacionalidad, etc.), "
+        "escribe 'No verificado' en su lugar. NUNCA inventes datos.\n"
+        "11. Para autores menos conocidos, sé conservador: es preferible dar menos datos "
+        "correctos que muchos datos inventados.\n"
+        "12. Los años de nacimiento y fallecimiento deben ser exactos. Si no los conoces, usa null.\n\n"
         "Devuelve estrictamente JSON válido con este schema:\n" + _AUTHOR_PROFILE_SCHEMA
     )
 

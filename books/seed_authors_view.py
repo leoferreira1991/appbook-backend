@@ -126,7 +126,7 @@ FAMOUS_AUTHORS = [
     "Naomi Novik", "V.E. Schwab",
 
     # ─── More Spanish-language contemporary ──────────────────────
-    "Diego Fischer", "Florencia Bonelli", "Federico Axat",
+    "Diego Fisher", "Florencia Bonelli", "Federico Axat",
     "Claudia Piñeiro", "Samanta Schweblin", "Mariana Enriquez",
     "Hernán Casciari", "Leonardo Padura",
     "Antonio Muñoz Molina", "Fernando Aramburu", "Luz Gabás",
@@ -210,15 +210,22 @@ def _seed_worker():
     _seeding_state['current'] = 'DONE'
 
 
+ADMIN_KEY = 'appbook-admin-2026'
+
+
+def _check_admin_key(request):
+    key = request.query_params.get('key', '') or request.data.get('key', '')
+    return key == ADMIN_KEY
+
+
 class SeedAuthorsView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = []  # Allow key-based auth
 
     def post(self, request):
         """Start the seeding process in background."""
-        # Only allow admin/superuser
-        if not request.user.is_staff and not request.user.is_superuser:
-            # For now allow any authenticated user (can restrict later)
-            pass
+        # Accept either JWT auth or admin key
+        if not _check_admin_key(request) and not (request.user and request.user.is_authenticated):
+            return Response({'error': 'Authentication required (JWT or admin key)'}, status=403)
 
         if _seeding_state['running']:
             return Response({
@@ -239,6 +246,10 @@ class SeedAuthorsView(APIView):
 
     def get(self, request):
         """Check seeding progress."""
+        # Accept either JWT auth or admin key
+        if not _check_admin_key(request) and not (request.user and request.user.is_authenticated):
+            return Response({'error': 'Authentication required (JWT or admin key)'}, status=403)
+
         # Count total cached
         total_cached = CachedAuthor.objects.count()
         last_completed = _seeding_state['completed'][-10:] if _seeding_state['completed'] else []
@@ -252,3 +263,4 @@ class SeedAuthorsView(APIView):
             'total_cached_in_db': total_cached,
             'last_completed': last_completed,
         })
+
