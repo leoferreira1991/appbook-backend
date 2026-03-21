@@ -4,6 +4,7 @@ All endpoints use key-based authentication (no JWT required).
 """
 import json
 import threading
+from django import db as django_db
 from django.conf import settings
 from django.db.models import Count, Q
 from rest_framework.views import APIView
@@ -208,11 +209,19 @@ class AdminAuthorEnrichView(APIView):
         works_only = str(request.data.get('works_only', request.query_params.get('works_only', 'true'))).lower() in ('true', '1', 'yes')
 
         def _enrich_bg():
+            # Close stale DB connections from previous requests
+            django_db.close_old_connections()
             try:
+                print(f"🔄 Admin enrich started: {author_name} (pk={author_id}, works_only={works_only})")
                 profile_data = _generate_author_profile(author_name)
                 if not profile_data or 'name' not in profile_data:
                     print(f"❌ Admin enrich failed (empty GPT): {author_name}")
                     return
+
+                # CRITICAL: Force the profile name to match the DB record
+                # GPT may return a different canonical name (e.g. "Diego Fischer Castañeda")
+                # which would cause _cache_author_profile to create a duplicate
+                profile_data['name'] = author_name
 
                 if works_only:
                     # Only update works — DO NOT touch profile fields
@@ -258,7 +267,11 @@ class AdminAuthorEnrichView(APIView):
                     print(f"✅ Admin enrich (full): {author_name}")
 
             except Exception as e:
+                import traceback
                 print(f"❌ Admin enrich error for {author_name}: {e}")
+                traceback.print_exc()
+            finally:
+                django_db.close_old_connections()
 
         thread = threading.Thread(target=_enrich_bg, daemon=True)
         thread.start()

@@ -386,98 +386,108 @@ BOOKS = [
 
 class BulkLibraryImportView(APIView):
     """Admin endpoint to bulk-populate a user's library."""
+    authentication_classes = []
     permission_classes = []
 
     def post(self, request):
-        key = request.query_params.get('key', '')
-        if key != ADMIN_KEY:
-            return Response({'error': 'Forbidden'}, status=403)
-
-        username = request.data.get('username', 'cr.leonardo.ferreira')
-        dry_run = request.data.get('dry_run', False)
-
         try:
-            user = User.objects.get(username=username)
-        except User.DoesNotExist:
-            return Response({'error': f'User "{username}" not found'}, status=404)
+            key = request.query_params.get('key', '')
+            if key != ADMIN_KEY:
+                return Response({'error': 'Forbidden'}, status=403)
 
-        # Get existing books (by title, case-insensitive)
-        existing = set()
-        for book in UserBookExternal.objects.filter(user=user):
-            existing.add(book.title.lower().strip())
-
-        added = []
-        skipped = []
-        errors = []
-
-        for title, author, pub_date, status, categories in BOOKS:
-            title_clean = title.strip()
-            if title_clean.lower() in existing:
-                skipped.append(title_clean)
-                continue
-
-            if dry_run:
-                added.append(f"[DRY] {title_clean} ({author}) [{status}]")
-                continue
+            username = request.data.get('username', 'cr.leonardo.ferreira')
+            dry_run = request.data.get('dry_run', False)
 
             try:
-                obj = UserBookExternal.objects.create(
-                    user=user,
-                    title=title_clean,
-                    author=author,
-                    publish_date=pub_date,
-                    status=status,
-                    categories=categories,
-                )
-                added.append(f"{title_clean} ({author}) [{status}] → id={obj.id}")
-                existing.add(title_clean.lower())
-            except Exception as e:
-                errors.append(f"{title_clean}: {str(e)}")
+                user = User.objects.get(username=username)
+            except User.DoesNotExist:
+                return Response({'error': f'User "{username}" not found'}, status=404)
 
-        return Response({
-            'user': username,
-            'total_in_list': len(BOOKS),
-            'added': len(added),
-            'skipped': len(skipped),
-            'errors': len(errors),
-            'added_detail': added[:50],
-            'skipped_detail': skipped[:20],
-            'error_detail': errors,
-        })
+            # Get existing books (by title, case-insensitive)
+            existing = set()
+            for book in UserBookExternal.objects.filter(user=user):
+                existing.add(book.title.lower().strip())
+
+            added = []
+            skipped = []
+            errors = []
+
+            for title, author, pub_date, book_status, categories in BOOKS:
+                title_clean = title.strip()
+                if title_clean.lower() in existing:
+                    skipped.append(title_clean)
+                    continue
+
+                if dry_run:
+                    added.append(f"[DRY] {title_clean} ({author}) [{book_status}]")
+                    continue
+
+                try:
+                    obj = UserBookExternal.objects.create(
+                        user=user,
+                        title=title_clean,
+                        author=author,
+                        publish_date=pub_date,
+                        status=book_status,
+                        categories=categories,
+                    )
+                    added.append(f"{title_clean} ({author}) [{book_status}] id={obj.id}")
+                    existing.add(title_clean.lower())
+                except Exception as e:
+                    errors.append(f"{title_clean}: {str(e)}")
+
+            return Response({
+                'user': username,
+                'total_in_list': len(BOOKS),
+                'added': len(added),
+                'skipped': len(skipped),
+                'errors': len(errors),
+                'added_detail': added[:50],
+                'skipped_detail': skipped[:20],
+                'error_detail': errors,
+            })
+        except Exception as e:
+            import traceback
+            return Response({'error': str(e), 'trace': traceback.format_exc()}, status=500)
 
     def get(self, request):
         """Preview: show what would be imported."""
-        key = request.query_params.get('key', '')
-        if key != ADMIN_KEY:
-            return Response({'error': 'Forbidden'}, status=403)
-
-        username = request.query_params.get('username', 'cr.leonardo.ferreira')
         try:
-            user = User.objects.get(username=username)
-        except User.DoesNotExist:
-            return Response({'error': f'User "{username}" not found'}, status=404)
+            key = request.query_params.get('key', '')
+            if key != ADMIN_KEY:
+                return Response({'error': 'Forbidden'}, status=403)
 
-        existing = set()
-        for book in UserBookExternal.objects.filter(user=user):
-            existing.add(book.title.lower().strip())
+            username = request.query_params.get('username', 'cr.leonardo.ferreira')
+            try:
+                user = User.objects.get(username=username)
+            except User.DoesNotExist:
+                return Response({'error': f'User "{username}" not found'}, status=404)
 
-        to_add = []
-        already = []
-        for title, author, pub_date, status, categories in BOOKS:
-            entry = {'title': title, 'author': author, 'status': status, 'year': pub_date}
-            if title.lower().strip() in existing:
-                already.append(entry)
-            else:
-                to_add.append(entry)
+            existing = set()
+            for book in UserBookExternal.objects.filter(user=user):
+                existing.add(book.title.lower().strip())
 
-        counts = {'read': 0, 'want_to_read': 0, 'searching': 0}
-        for b in BOOKS:
-            counts[b[3]] = counts.get(b[3], 0) + 1
+            to_add = []
+            already = []
+            for title, author, pub_date, book_status, categories in BOOKS:
+                entry = {'title': title, 'author': author, 'status': book_status, 'year': pub_date}
+                if title.lower().strip() in existing:
+                    already.append(entry)
+                else:
+                    to_add.append(entry)
 
-        return Response({
-            'total_in_list': len(BOOKS),
-            'already_in_library': len(already),
-            'to_add': len(to_add),
-            'breakdown': counts,
-            'preview_to_add': to_add[:30],
-        })
+            counts = {'read': 0, 'want_to_read': 0, 'searching': 0}
+            for b in BOOKS:
+                counts[b[3]] = counts.get(b[3], 0) + 1
+
+            return Response({
+                'total_in_list': len(BOOKS),
+                'already_in_library': len(already),
+                'to_add': len(to_add),
+                'breakdown': counts,
+                'preview_to_add': to_add[:30],
+            })
+        except Exception as e:
+            import traceback
+            return Response({'error': str(e), 'trace': traceback.format_exc()}, status=500)
+

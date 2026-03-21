@@ -4,6 +4,7 @@ This avoids HTTP timeout by starting the work in a thread.
 """
 import threading
 from django.conf import settings
+from django import db as django_db
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -191,6 +192,9 @@ def _seed_worker():
     """Background worker that generates and caches author profiles."""
     import time
 
+    # Close stale DB connections from previous requests
+    django_db.close_old_connections()
+
     # Deduplicate
     unique = list(dict.fromkeys(FAMOUS_AUTHORS))
 
@@ -218,8 +222,14 @@ def _seed_worker():
 
         _seeding_state['current'] = author_name
         try:
+            # Refresh DB connections periodically to prevent stale connections
+            if i % 5 == 0:
+                django_db.close_old_connections()
+
             profile_data = _generate_author_profile(author_name)
             if profile_data and 'name' in profile_data:
+                # CRITICAL: Force the name to match our list to prevent duplicates
+                profile_data['name'] = author_name
                 photo_url = _get_author_photo_url(profile_data.get('name', author_name))
                 profile_data['photo_url'] = photo_url
                 author = _cache_author_profile(profile_data)
@@ -229,8 +239,10 @@ def _seed_worker():
                 _seeding_state['errors'] += 1
                 _seeding_state['completed'].append(f"❌ {author_name} (GPT empty)")
         except Exception as e:
+            import traceback
             _seeding_state['errors'] += 1
             _seeding_state['completed'].append(f"❌ {author_name} ({str(e)[:50]})")
+            traceback.print_exc()
 
         _seeding_state['processed'] = i + 1
 
@@ -240,6 +252,7 @@ def _seed_worker():
 
     _seeding_state['running'] = False
     _seeding_state['current'] = 'DONE'
+    django_db.close_old_connections()
 
 
 ADMIN_KEY = 'appbook-admin-2026'

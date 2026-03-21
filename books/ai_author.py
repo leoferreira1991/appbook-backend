@@ -140,17 +140,18 @@ def _generate_author_profile(author_name: str) -> dict:
                 model='gpt-4o-mini',
                 messages=[
                     {'role': 'system', 'content': (
-                        "Eres un parser de datos. Tu ÚNICA tarea es extraer la lista de obras literarias "
+                        "Eres un parser de datos. Tu ÚNICA tarea es extraer la lista de LIBROS "
                         "del texto de Wikipedia que te doy.\n\n"
                         "REGLAS:\n"
-                        "1. Extrae TODOS los títulos de libros, novelas, colecciones de cuentos, y obras de teatro.\n"
+                        "1. Extrae TODOS los títulos de LIBROS: novelas, novelas cortas y colecciones de cuentos.\n"
                         "2. Traduce los títulos al español cuando exista traducción conocida.\n"
                         "3. NO inventes obras. Solo extrae las que aparecen en el texto.\n"
                         "4. Incluye el año de publicación si aparece.\n"
                         "5. Incluye el género si se puede detectar del contexto.\n"
                         "6. Si la obra pertenece a una serie/saga, indica el nombre de la serie.\n"
-                        "7. NO incluyas películas, series de TV, ni adaptaciones.\n"
-                        "8. NO repitas títulos.\n\n"
+                        "7. NO incluyas películas, series de TV, obras de teatro, poesía, ensayos, ni adaptaciones.\n"
+                        "8. NO repitas títulos.\n"
+                        "9. SOLO incluye LIBROS publicados como tal (novelas, novelas cortas, colecciones de cuentos).\n\n"
                         "Devuelve JSON: {\"works\": [{\"title\": \"...\", \"year\": 1920, \"genre\": \"...\", "
                         "\"original_language\": \"...\", \"series_name\": \"...\", \"series_order\": N}]}"
                     )},
@@ -175,15 +176,16 @@ def _generate_author_profile(author_name: str) -> dict:
         "Eres un experto bibliotecario y biógrafo literario. Tu trabajo es generar un perfil COMPLETO de un autor "
         "con TODA su bibliografía.\n\n"
         "REGLAS CRÍTICAS:\n"
-        "1. DEBES incluir ABSOLUTAMENTE TODAS las obras publicadas del autor.\n"
-        "2. NO omitas obras. Si un autor tiene 50 novelas, lista las 50. Si tiene 80, lista las 80.\n"
-        "3. NO repitas títulos. Cada obra debe aparecer UNA sola vez.\n"
+        "1. DEBES incluir ABSOLUTAMENTE TODOS los LIBROS publicados del autor.\n"
+        "2. NO omitas libros. Si un autor tiene 50 novelas, lista las 50. Si tiene 80, lista las 80.\n"
+        "3. NO repitas títulos. Cada libro debe aparecer UNA sola vez.\n"
         "4. Si la obra tiene traducción conocida al español, usa el título en español.\n"
         "5. Agrupa las obras por saga cuando corresponda (series_name + series_order).\n"
         "6. La biografía debe ser en español, informativa y de 3-4 párrafos.\n"
         "7. Si el autor está vivo, death_year debe ser null.\n"
-        "8. Incluye: novelas, novelas cortas publicadas como libro, colecciones de cuentos, "
-        "y obras de teatro publicadas. NO incluyas cuentos sueltos no publicados como libro.\n\n"
+        "8. SOLO incluye LIBROS: novelas, novelas cortas publicadas como libro, colecciones de cuentos. "
+        "NO incluyas obras de teatro, poesía, ensayos, cuentos sueltos no publicados como libro, "
+        "ni guiones de cine o TV.\n\n"
         "⚠️ REGLAS ANTI-ALUCINACIÓN (MUY IMPORTANTE):\n"
         "9. VERIFICA la nacionalidad del autor. NO inventes nacionalidades. "
         "Si el autor nació en Uruguay es Uruguayo, si nació en Argentina es Argentino, etc. "
@@ -237,7 +239,7 @@ def _generate_author_profile(author_name: str) -> dict:
         print(f"  [{author_name}] Merged: {wiki_count} from Wikipedia + {len(all_works) - wiki_count} new from GPT = {len(all_works)} total")
         
         # ── Step 2: Iterative loop to fetch remaining works ──
-        MAX_ITERATIONS = 12
+        MAX_ITERATIONS = 4
         MIN_NEW_WORKS = 1  # Stop only when GPT returns 0 new works
         
         for iteration in range(MAX_ITERATIONS):
@@ -247,22 +249,25 @@ def _generate_author_profile(author_name: str) -> dict:
                 model='gpt-4o-mini',
                 messages=[
                     {'role': 'system', 'content': (
-                        "Eres un experto bibliotecario. Tu tarea es completar la bibliografía de un autor.\n"
-                        "Te voy a dar una lista de obras que YA TENGO. Necesito que me des las que FALTAN.\n"
-                        "IMPORTANTE: Sé exhaustivo. Si el autor tiene 60+ obras y solo veo 20, HAY MUCHAS FALTANTES.\n"
-                        "Devuelve JSON con un array 'works' que contenga SOLO las obras que NO están en mi lista.\n"
-                        "Si NO falta ninguna obra, devuelve {\"works\": []}.\n"
+                        "Eres un experto bibliotecario. Tu tarea es completar la lista de LIBROS de un autor.\n"
+                        "Te voy a dar una lista de libros que YA TENGO. Necesito que me des los que FALTAN.\n"
+                        "IMPORTANTE: Sé exhaustivo. Si el autor tiene 60+ libros y solo veo 20, HAY MUCHOS FALTANTES.\n"
+                        "SOLO incluye LIBROS: novelas, novelas cortas, colecciones de cuentos. "
+                        "NO incluyas obras de teatro, poesía, ensayos ni guiones.\n"
+                        "Devuelve JSON con un array 'works' que contenga SOLO los libros que NO están en mi lista.\n"
+                        "Si NO falta ningún libro, devuelve {\"works\": []}.\n"
                         "Cada obra: {\"title\": \"...\", \"year\": 1920, \"genre\": \"...\", "
                         "\"original_language\": \"...\", \"series_name\": \"...\", \"series_order\": N}\n"
                         "Usa títulos en español cuando exista traducción conocida."
                     )},
                     {'role': 'user', 'content': (
                         f"Autor: {author_name}\n\n"
-                        f"Ya tengo estas {len(known_titles)} obras:\n"
+                        f"Ya tengo estos {len(known_titles)} libros:\n"
                         + "\n".join(f"- {t}" for t in known_titles)
-                        + "\n\n¿Cuáles obras publicadas de este autor FALTAN en mi lista? "
-                        "Incluye novelas, colecciones de cuentos, novelas cortas, y obras de teatro. "
-                        "Si no falta ninguna, devuelve {\"works\": []}."
+                        + "\n\n¿Cuáles LIBROS publicados de este autor FALTAN en mi lista? "
+                        "Incluye solo novelas, colecciones de cuentos y novelas cortas. "
+                        "NO incluyas obras de teatro, poesía ni ensayos. "
+                        "Si no falta ninguno, devuelve {\"works\": []}."
                     )}
                 ],
                 response_format={'type': 'json_object'},
