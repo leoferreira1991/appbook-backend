@@ -17,6 +17,7 @@ from .admin_authors_views import (
     AdminAuthorEnrichView, AdminAuthorPhotoView, AdminAuthorWorkView,
 )
 from .admin_panel import AdminPanelView
+from .bulk_import_view import BulkLibraryImportView
 
 router = DefaultRouter()
 router.register(r'authors', AuthorViewSet)
@@ -55,5 +56,7 @@ urlpatterns = [
     path('admin-authors/<int:pk>/works/', AdminAuthorWorkView.as_view(), name='admin-author-works'),
     # Admin web panel
     path('admin-panel/', AdminPanelView.as_view(), name='admin-panel'),
+    # Bulk library import
+    path('bulk-import/', BulkLibraryImportView.as_view(), name='bulk-import'),
     path('', include(router.urls)),
 ]
