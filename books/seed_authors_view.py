@@ -53,6 +53,20 @@ FAMOUS_AUTHORS = [
     "Celeste Ng", "Taylor Jenkins Reid", "Delia Owens",
     "Andy Weir", "Blake Crouch", "Amor Towles", "Anthony Doerr",
     "Khaled Hosseini", "Yann Martel", "Alice Walker", "Chimamanda Ngozi Adichie",
+    "Cormac McCarthy", "Philip Roth", "Saul Bellow", "John Updike",
+    "Raymond Chandler", "Dashiell Hammett", "Agatha Raisin",
+    "P.D. James", "Ruth Rendell", "Dorothy L. Sayers",
+    "Daphne du Maurier", "Shirley Jackson", "Flannery O'Connor",
+    "Carson McCullers", "Sylvia Plath", "J.D. Salinger",
+    "Chuck Palahniuk", "Bret Easton Ellis", "Don DeLillo", "Thomas Pynchon",
+    "David Mitchell", "Zadie Smith", "Hilary Mantel",
+    "Bernardine Evaristo", "Douglas Adams", "Clive Barker",
+    "Anne Rice", "Peter Benchley", "Robin Cook",
+    "Karin Slaughter", "Tess Gerritsen", "Patricia Cornwell",
+    "Janet Evanovich", "Sue Grafton", "Sara Paretsky",
+    "Scott Turow", "David Baldacci", "Brad Thor",
+    "Vince Flynn", "Nelson DeMille", "Clive Cussler",
+    "Erin Morgenstern", "Hanya Yanagihara",
 
     # ─── Spanish-language authors ────────────────────────────────
     "Gabriel García Márquez", "Jorge Luis Borges", "Mario Vargas Llosa",
@@ -71,6 +85,26 @@ FAMOUS_AUTHORS = [
     "Santiago Posteguillo", "Ildefonso Falcones", "Julia Navarro",
     "Eva García Sáenz de Urturi", "Blue Jeans", "Elisabet Benavent",
     "Albert Espinosa", "Jordi Sierra i Fabra",
+    "Diego Fischer", "Florencia Bonelli", "Federico Axat",
+    "Claudia Piñeiro", "Samanta Schweblin", "Mariana Enriquez",
+    "Hernán Casciari", "Leonardo Padura",
+    "Antonio Muñoz Molina", "Fernando Aramburu", "Luz Gabás",
+    # More Spanish-language contemporary
+    "Javier Castillo", "Juan Gómez-Jurado", "Megan Maxwell",
+    "Carmen Mola", "Sonsoles Ónega", "Irene Vallejo",
+    "Pérez-Reverte", "Lorenzo Silva", "Andrés Trapiello",
+    "Matilde Asensi", "Reyes Monforte",
+    # Latinoamerican additions
+    "Gioconda Belli", "Sergio Ramírez", "Augusto Roa Bastos",
+    "Rómulo Gallegos", "José Donoso", "Manuel Puig",
+    "Reinaldo Arenas", "Guillermo Cabrera Infante",
+    "César Vallejo", "Rubén Darío", "Gabriela Mistral",
+    "José Martí", "Ricardo Güiraldes", "Leopoldo Marechal",
+    "Silvina Ocampo", "Victoria Ocampo",
+    # Uruguayan authors
+    "Juan Carlos Onetti", "Juana de Ibarbourou", "Eduardo Acevedo Díaz",
+    "Felisberto Hernández", "Idea Vilariño", "Cristina Peri Rossi",
+    "Carlos Liscano", "Hugo Burel", "Mercedes Vigil",
 
     # ─── Portuguese-language authors ─────────────────────────────
     "José Saramago", "Fernando Pessoa", "Machado de Assis",
@@ -90,11 +124,14 @@ FAMOUS_AUTHORS = [
     "Marguerite Yourcenar", "Michel Houellebecq",
     "Amélie Nothomb", "Marc Levy", "Guillaume Musso",
     "Fred Vargas", "Pierre Lemaitre",
+    "Marguerite Duras", "André Gide", "Françoise Sagan",
+    "Bernard Werber", "Jean-Christophe Grangé",
 
     # ─── Russian-language authors ────────────────────────────────
     "Fiódor Dostoievski", "León Tolstói", "Antón Chéjov",
     "Nikolái Gógol", "Aleksandr Pushkin",
     "Mijaíl Bulgákov", "Boris Pasternak", "Aleksandr Solzhenitsyn",
+    "Iván Turguénev", "Anna Ajmátova", "Marina Tsvetáyeva",
 
     # ─── German-language authors ─────────────────────────────────
     "Franz Kafka", "Hermann Hesse", "Thomas Mann", "Johann Wolfgang von Goethe",
@@ -125,11 +162,6 @@ FAMOUS_AUTHORS = [
     "Alex Michaelides", "R.F. Kuang",
     "Naomi Novik", "V.E. Schwab",
 
-    # ─── More Spanish-language contemporary ──────────────────────
-    "Diego Fisher", "Florencia Bonelli", "Federico Axat",
-    "Claudia Piñeiro", "Samanta Schweblin", "Mariana Enriquez",
-    "Hernán Casciari", "Leonardo Padura",
-    "Antonio Muñoz Molina", "Fernando Aramburu", "Luz Gabás",
 
     # ─── Self-help & non-fiction popular ─────────────────────────
     "Dale Carnegie", "Napoleon Hill", "Robert Kiyosaki",
@@ -146,7 +178,7 @@ FAMOUS_AUTHORS = [
     "Homero", "Sófocles", "Platón", "Sun Tzu",
 
     # ─── Horror / Thriller ───────────────────────────────────────
-    "Thomas Harris", "Shirley Jackson", "Richard Matheson",
+    "Thomas Harris", "Richard Matheson",
     "Joe Hill",
 
     # ─── Romance & contemporary fiction ──────────────────────────

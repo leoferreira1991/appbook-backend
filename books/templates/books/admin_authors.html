@@ -1178,42 +1178,69 @@
             if (!currentAuthorId) return;
             const name = document.getElementById('editName').value;
             const worksCount = document.getElementById('worksCount').textContent;
-            if (!confirm(`¿Re-poblar la bibliografía de "${name}"?\n\nEsto eliminará las ${worksCount} obras actuales y generará una bibliografía COMPLETA con IA.\n\nPara autores prolíficos como Agatha Christie, esto puede tardar 1-2 minutos.`)) return;
+            if (!confirm(`¿Re-poblar la bibliografía de "${name}"?\n\nEsto eliminará las ${worksCount} obras actuales y generará una bibliografía COMPLETA con IA + Wikipedia.\n\nPara autores prolíficos como Agatha Christie, esto puede tardar 2-3 minutos.`)) return;
 
             const btn = document.getElementById('reseedBtn');
             btn.disabled = true;
             btn.innerHTML = '<span class="spinner"></span> Eliminando obras...';
 
-            // Step 1: Delete all existing works
-            const detail = await apiJson(`${currentAuthorId}/`);
-            const works = detail.works || [];
-            for (const w of works) {
-                await apiJson(`${currentAuthorId}/works/?work_id=${w.id}`, 'DELETE');
-            }
-
-            // Step 2: Trigger re-enrichment
-            btn.innerHTML = '<span class="spinner"></span> Enriqueciendo...';
-            const data = await apiJson(`${currentAuthorId}/enrich/`, 'POST');
-            toast(`Bibliografía de "${name}" siendo re-generada con IA. Esto tarda 1-2 min.`, 'info');
-
-            btn.disabled = false;
-            btn.innerHTML = '📚 Re-poblar Obras';
-
-            // Poll for completion
-            let pollCount = 0;
-            const pollInterval = setInterval(async () => {
-                pollCount++;
-                const updated = await apiJson(`${currentAuthorId}/`);
-                document.getElementById('worksCount').textContent = updated.works_count || 0;
-                renderWorks(updated.works || []);
-                if (updated.works_count > parseInt(worksCount) || pollCount > 24) {
-                    clearInterval(pollInterval);
-                    if (updated.works_count > parseInt(worksCount)) {
-                        toast(`✅ "${name}" ahora tiene ${updated.works_count} obras!`);
-                    }
-                    loadAuthors();
+            try {
+                // Step 1: Delete all existing works
+                const detail = await apiJson(`${currentAuthorId}/`);
+                const works = detail.works || [];
+                for (const w of works) {
+                    try { await apiJson(`${currentAuthorId}/works/?work_id=${w.id}`, 'DELETE'); } catch (e) { }
                 }
-            }, 5000);
+
+                // Step 2: Trigger re-enrichment (works_only=true to keep profile intact)
+                btn.innerHTML = '<span class="spinner"></span> Enriqueciendo con IA + Wikipedia...';
+                document.getElementById('worksCount').textContent = '0';
+                renderWorks([]);
+
+                const enrichRes = await fetch(
+                    `${API_BASE}${currentAuthorId}/enrich/?key=${ADMIN_KEY}`,
+                    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ works_only: true }) }
+                );
+                if (!enrichRes.ok) {
+                    toast('Error al iniciar enriquecimiento', 'error');
+                    btn.disabled = false;
+                    btn.innerHTML = '📚 Re-poblar Obras';
+                    return;
+                }
+
+                toast(`Bibliografía de "${name}" siendo re-generada con Wikipedia + IA. Esto tarda 2-3 min.`, 'info');
+
+                // Poll for completion — works were deleted so we check for count > 0
+                let pollCount = 0;
+                const pollInterval = setInterval(async () => {
+                    pollCount++;
+                    try {
+                        const updated = await apiJson(`${currentAuthorId}/`);
+                        const newCount = updated.works_count || 0;
+                        document.getElementById('worksCount').textContent = newCount;
+                        if (newCount > 0) renderWorks(updated.works || []);
+
+                        if (newCount > 0 && pollCount > 6 || pollCount > 36) {
+                            // After 30s min and works appeared, or after 3 min max, stop polling
+                            clearInterval(pollInterval);
+                            btn.disabled = false;
+                            btn.innerHTML = '📚 Re-poblar Obras';
+                            if (newCount > 0) {
+                                toast(`✅ "${name}" ahora tiene ${newCount} obras!`);
+                            } else {
+                                toast(`⚠️ El enriquecimiento puede seguir en proceso. Recargá en unos minutos.`, 'info');
+                            }
+                            loadAuthors();
+                        }
+                    } catch (e) {
+                        // Network error during polling — keep trying
+                    }
+                }, 5000);
+            } catch (e) {
+                toast('Error: ' + e.message, 'error');
+                btn.disabled = false;
+                btn.innerHTML = '📚 Re-poblar Obras';
+            }
         }
 
         // ─── Seed All Famous Authors ───

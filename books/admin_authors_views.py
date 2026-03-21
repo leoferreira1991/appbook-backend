@@ -186,7 +186,12 @@ class AdminAuthorDetailView(APIView):
 
 
 class AdminAuthorEnrichView(APIView):
-    """Trigger AI enrichment for a single author."""
+    """Trigger AI enrichment for a single author.
+    
+    POST params:
+      - works_only (bool, default=true): Only update works, keep profile fields intact
+      - wait (bool, default=false): Wait for completion instead of background thread
+    """
     permission_classes = []
 
     def post(self, request, pk):
@@ -199,17 +204,59 @@ class AdminAuthorEnrichView(APIView):
             return Response({'error': 'Author not found'}, status=404)
 
         author_name = author.name
+        author_id = author.id
+        works_only = str(request.data.get('works_only', request.query_params.get('works_only', 'true'))).lower() in ('true', '1', 'yes')
 
         def _enrich_bg():
             try:
                 profile_data = _generate_author_profile(author_name)
-                if profile_data and 'name' in profile_data:
+                if not profile_data or 'name' not in profile_data:
+                    print(f"❌ Admin enrich failed (empty GPT): {author_name}")
+                    return
+
+                if works_only:
+                    # Only update works — DO NOT touch profile fields
+                    author_obj = CachedAuthor.objects.get(pk=author_id)
+                    author_obj.works.all().delete()
+
+                    works_data = profile_data.get('works', [])
+                    works_to_create = []
+                    seen_titles = set()
+                    for w in works_data:
+                        title = w.get('title', '').strip()
+                        if not title or title.lower() in seen_titles:
+                            continue
+                        seen_titles.add(title.lower())
+                        works_to_create.append(CachedAuthorWork(
+                            author=author_obj,
+                            title=title,
+                            year=w.get('year'),
+                            genre=w.get('genre') or '',
+                            original_language=w.get('original_language') or '',
+                            series_name=w.get('series_name') or '',
+                            series_order=w.get('series_order'),
+                        ))
+                    if works_to_create:
+                        CachedAuthorWork.objects.bulk_create(works_to_create, ignore_conflicts=True)
+                    
+                    # Only update photo if author doesn't have one
+                    if not author_obj.photo_url:
+                        try:
+                            photo_url = _get_author_photo_url(author_name)
+                            if photo_url:
+                                author_obj.photo_url = photo_url
+                                author_obj.save(update_fields=['photo_url'])
+                        except Exception:
+                            pass
+                    
+                    print(f"✅ Admin enrich (works_only): {author_name} — {len(works_to_create)} works")
+                else:
+                    # Full enrichment — overwrites everything
                     photo_url = _get_author_photo_url(profile_data.get('name', author_name))
                     profile_data['photo_url'] = photo_url
                     _cache_author_profile(profile_data)
-                    print(f"✅ Admin enrich completed: {author_name}")
-                else:
-                    print(f"❌ Admin enrich failed (empty GPT): {author_name}")
+                    print(f"✅ Admin enrich (full): {author_name}")
+
             except Exception as e:
                 print(f"❌ Admin enrich error for {author_name}: {e}")
 
@@ -217,8 +264,9 @@ class AdminAuthorEnrichView(APIView):
         thread.start()
 
         return Response({
-            'message': f'AI enrichment started for "{author_name}". This runs in background.',
+            'message': f'AI enrichment started for "{author_name}". Mode: {"works_only" if works_only else "full"}. This runs in background.',
             'author_id': pk,
+            'works_only': works_only,
         })
 
 
