@@ -22,12 +22,25 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-%h5jl=ani^y6vw9pm=78r#2+u3$&)oa@&3v6mn4g9kbh*x@z%j'
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
+if not SECRET_KEY:
+    if 'RENDER' in os.environ:
+        raise ValueError("DJANGO_SECRET_KEY environment variable is required in production!")
+    # Only allow insecure default in local development
+    SECRET_KEY = 'django-insecure-LOCAL-DEV-ONLY-CHANGE-ME'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = 'RENDER' not in os.environ
 
-ALLOWED_HOSTS = ['*'] # Allowed for Render and local network
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',') if os.environ.get('ALLOWED_HOSTS') else []
+if DEBUG:
+    ALLOWED_HOSTS = ['*']
+elif 'RENDER' in os.environ:
+    ALLOWED_HOSTS = [
+        os.environ.get('RENDER_EXTERNAL_HOSTNAME', ''),
+        'appbook-backend.onrender.com',
+        'localhost',
+    ]
 
 
 # Application definition
@@ -141,7 +154,17 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'users.User'
 
 # CORS
-CORS_ALLOW_ALL_ORIGINS = True # For development only
+if DEBUG:
+    CORS_ALLOW_ALL_ORIGINS = True  # Only in local development
+else:
+    CORS_ALLOW_ALL_ORIGINS = False
+    CORS_ALLOWED_ORIGINS = [
+        origin.strip()
+        for origin in os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',')
+        if origin.strip()
+    ] or [
+        'https://appbook-backend.onrender.com',
+    ]
 
 # Django REST Framework
 REST_FRAMEWORK = {
@@ -163,29 +186,48 @@ SIMPLE_JWT = {
 }
 
 # Google Auth
-GOOGLE_WEB_CLIENT_ID = '177779223898-u06hdiv4asfnfbmf7l89tvfsgb84v759.apps.googleusercontent.com'
+GOOGLE_WEB_CLIENT_ID = os.environ.get('GOOGLE_WEB_CLIENT_ID', '')
+if not GOOGLE_WEB_CLIENT_ID and not DEBUG:
+    print("WARNING: GOOGLE_WEB_CLIENT_ID not set in production!")
 
 # ─── Cloudinary (Community Book Covers) ────────────────────────────────────
 import cloudinary
+
+_CLOUDINARY_CLOUD = os.environ.get('CLOUDINARY_CLOUD_NAME', '')
+_CLOUDINARY_KEY = os.environ.get('CLOUDINARY_API_KEY', '')
+_CLOUDINARY_SECRET = os.environ.get('CLOUDINARY_API_SECRET', '')
+
+if not all([_CLOUDINARY_CLOUD, _CLOUDINARY_KEY, _CLOUDINARY_SECRET]) and not DEBUG:
+    print("WARNING: Cloudinary credentials not fully configured!")
+
 cloudinary.config(
-    cloud_name = os.environ.get('CLOUDINARY_CLOUD_NAME', 'dzkxgizzu'),
-    api_key    = os.environ.get('CLOUDINARY_API_KEY', '199246675979116'),
-    api_secret = os.environ.get('CLOUDINARY_API_SECRET', 'JMAADO86Ds53uvqRldp4dcwYc_4'),
+    cloud_name = _CLOUDINARY_CLOUD,
+    api_key    = _CLOUDINARY_KEY,
+    api_secret = _CLOUDINARY_SECRET,
     secure     = True,
 )
 
 CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME', 'dzkxgizzu'),
-    'API_KEY':    os.environ.get('CLOUDINARY_API_KEY', '199246675979116'),
-    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET', 'JMAADO86Ds53uvqRldp4dcwYc_4'),
+    'CLOUD_NAME': _CLOUDINARY_CLOUD,
+    'API_KEY':    _CLOUDINARY_KEY,
+    'API_SECRET': _CLOUDINARY_SECRET,
 }
 
 # ─── AI & External APIs ─────────────────────────────────────────────────
 # OpenAI — for personalized book recommendations
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
+if not OPENAI_API_KEY and not DEBUG:
+    print("WARNING: OPENAI_API_KEY not set in production!")
 
 # Google Books API — for richer search results
-GOOGLE_BOOKS_API_KEY = os.environ.get('GOOGLE_BOOKS_API_KEY', 'AIzaSyCwvilgM-nNax0xGp1lQWgP9JD65STzyJU')
+GOOGLE_BOOKS_API_KEY = os.environ.get('GOOGLE_BOOKS_API_KEY', '')
+if not GOOGLE_BOOKS_API_KEY and not DEBUG:
+    print("WARNING: GOOGLE_BOOKS_API_KEY not set in production!")
+
+# Admin Panel Key — for author seeding and management endpoints
+APPBOOK_ADMIN_KEY = os.environ.get('APPBOOK_ADMIN_KEY', 'appbook-admin-2026')
+if APPBOOK_ADMIN_KEY == 'appbook-admin-2026' and not DEBUG:
+    print("WARNING: APPBOOK_ADMIN_KEY using default value in production! Set a secure key.")
 
 # ─── Email Configuration (Bug Reports) ──────────────────────────────────────
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
