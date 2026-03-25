@@ -15,7 +15,7 @@ import cloudinary.uploader
 from .models import CachedAuthor, CachedAuthorWork
 from .ai_author import _generate_author_profile, _get_author_photo_url, _cache_author_profile
 
-ADMIN_KEY = 'appbook-admin-2026'
+ADMIN_KEY = settings.APPBOOK_ADMIN_KEY
 
 
 def _check_key(request):
@@ -212,19 +212,19 @@ class AdminAuthorEnrichView(APIView):
             # Close stale DB connections from previous requests
             django_db.close_old_connections()
             try:
-                print(f"🔄 Admin enrich started: {author_name} (pk={author_id}, works_only={works_only})")
+                print(f"ð Admin enrich started: {author_name} (pk={author_id}, works_only={works_only})")
                 profile_data = _generate_author_profile(author_name)
                 if not profile_data or 'name' not in profile_data:
-                    print(f"❌ Admin enrich failed (empty GPT): {author_name}")
+                    print(f"â Admin enrich failed (empty GPT): {author_name}")
                     return
 
                 # CRITICAL: Force the profile name to match the DB record
-                # GPT may return a different canonical name (e.g. "Diego Fischer Castañeda")
+                # GPT may return a different canonical name (e.g. "Diego Fischer CastaÃ±eda")
                 # which would cause _cache_author_profile to create a duplicate
                 profile_data['name'] = author_name
 
                 if works_only:
-                    # Only update works — DO NOT touch profile fields
+                    # Only update works â DO NOT touch profile fields
                     author_obj = CachedAuthor.objects.get(pk=author_id)
                     author_obj.works.all().delete()
 
@@ -258,17 +258,17 @@ class AdminAuthorEnrichView(APIView):
                         except Exception:
                             pass
                     
-                    print(f"✅ Admin enrich (works_only): {author_name} — {len(works_to_create)} works")
+                    print(f"â Admin enrich (works_only): {author_name} â {len(works_to_create)} works")
                 else:
-                    # Full enrichment — overwrites everything
+                    # Full enrichment â overwrites everything
                     photo_url = _get_author_photo_url(profile_data.get('name', author_name))
                     profile_data['photo_url'] = photo_url
                     _cache_author_profile(profile_data)
-                    print(f"✅ Admin enrich (full): {author_name}")
+                    print(f"â Admin enrich (full): {author_name}")
 
             except Exception as e:
                 import traceback
-                print(f"❌ Admin enrich error for {author_name}: {e}")
+                print(f"â Admin enrich error for {author_name}: {e}")
                 traceback.print_exc()
             finally:
                 django_db.close_old_connections()
