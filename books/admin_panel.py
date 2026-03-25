@@ -1,7 +1,8 @@
 """
-Admin panel view — serves the web-based author management UI.
+Admin panel view â serves the web-based author management UI.
 """
 from django.shortcuts import render
+from django.conf import settings
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
@@ -12,7 +13,7 @@ class AdminPanelView(APIView):
 
     def get(self, request):
         key = request.query_params.get('key', '')
-        if key != 'appbook-admin-2026':
-            return Response({'error': 'Invalid key. Use ?key=appbook-admin-2026'}, status=403)
+        if key != settings.APPBOOK_ADMIN_KEY:
+            return Response({'error': 'Invalid admin key'}, status=403)
 
         return render(request, 'books/admin_authors.html', {'admin_key': key})
