@@ -1,8 +1,11 @@
 from django.conf import settings
+from django.core.cache import cache
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 import json
+import re
+import hashlib
 import urllib.request
 import urllib.parse
 from openai import OpenAI
@@ -16,6 +19,82 @@ _SEARCH_SCHEMA = """{
 }"""
 
 _VALID_LANGUAGES = {'es', 'en', 'pt', 'fr', 'it', 'de', 'all'}
+
+# In-memory search cache (survives across requests, cleared on restart)
+_search_cache = {}
+_CACHE_MAX_SIZE = 200
+_CACHE_TTL_SECONDS = 3600  # 1 hour
+
+# Regex patterns for bypassing AI intent analysis
+_ISBN_PATTERN = re.compile(r'^\d{10,13}$')
+_SIMPLE_QUERY_PATTERN = re.compile(r'^[\w\s\.\-\'\u00C0-\u024F]{2,60}$')  # Unicode letters, spaces, basic punctuation
+
+
+def _try_bypass_ai(query: str) -> dict | None:
+    """Try to classify the search intent WITHOUT calling OpenAI.
+
+    Returns intent_data dict if we can classify locally, None if AI is needed.
+    This saves ~1-2 seconds on simple queries like author names, ISBNs, etc.
+    """
+    q = query.strip()
+
+    # ISBN detection
+    digits_only = re.sub(r'[\s\-]', '', q)
+    if _ISBN_PATTERN.match(digits_only):
+        return {
+            'intent': 'isbn',
+            'canonical_name': digits_only,
+            'google_books_query': f'isbn:{digits_only}',
+            'language_filter': 'all',
+            'reason': f'ISBN detected: {digits_only}',
+        }
+
+    # Simple 2-3 word queries that look like names → treat as general search
+    # This catches most "author name" and "book title" searches
+    words = q.split()
+    if 1 <= len(words) <= 4 and _SIMPLE_QUERY_PATTERN.match(q):
+        # Check if it looks like an author name (capitalized words)
+        looks_like_name = all(
+            w[0].isupper() or w.lower() in ('de', 'del', 'la', 'las', 'los', 'von', 'van', 'di', 'da', 'le', 'y', 'e', 'i')
+            for w in words if len(w) > 1
+        )
+        if looks_like_name and len(words) >= 2:
+            return {
+                'intent': 'author',
+                'canonical_name': q,
+                'google_books_query': f'inauthor:"{q}"',
+                'language_filter': 'all',
+                'reason': f'Direct author search: {q}',
+            }
+
+    return None  # Need AI for complex queries
+
+
+def _get_cache_key(query: str, lang: str, page: int) -> str:
+    """Generate a cache key for search results."""
+    raw = f"{query.lower().strip()}|{lang}|{page}"
+    return hashlib.md5(raw.encode()).hexdigest()
+
+
+def _cache_get(key: str):
+    """Get from in-memory cache."""
+    import time
+    entry = _search_cache.get(key)
+    if entry and (time.time() - entry['ts']) < _CACHE_TTL_SECONDS:
+        return entry['data']
+    elif entry:
+        del _search_cache[key]  # Expired
+    return None
+
+
+def _cache_set(key: str, data):
+    """Set in in-memory cache with LRU eviction."""
+    import time
+    if len(_search_cache) >= _CACHE_MAX_SIZE:
+        # Evict oldest entry
+        oldest_key = min(_search_cache, key=lambda k: _search_cache[k]['ts'])
+        del _search_cache[oldest_key]
+    _search_cache[key] = {'data': data, 'ts': time.time()}
 
 
 def _analyze_search_intent(query: str) -> dict:
@@ -93,11 +172,9 @@ def _fetch_from_google_books(query: str, max_results: int = 40, lang: str = 'all
                 # Language
                 book_language = vol.get('language', '')
 
-                # Pages and Chapters
+                # Pages — don't guess chapters, let the user set them
                 page_count = vol.get('pageCount')
-                total_chapters = 10
-                if page_count and page_count > 0:
-                    total_chapters = max(1, page_count // 10)
+                total_chapters = None  # Unknown — user will be prompted
 
                 results.append({
                     'title': vol.get('title', 'Sin título'),
@@ -179,8 +256,20 @@ class AISearchView(APIView):
         if not query:
             return Response({'metadata': None, 'results': [], 'has_more': False})
 
-        # 1. Ask AI to decipher intent
-        intent_data = _analyze_search_intent(query)
+        # 0. Check cache first — saves the entire pipeline
+        cache_key = _get_cache_key(query, lang or 'all', page)
+        cached_response = _cache_get(cache_key)
+        if cached_response:
+            return Response(cached_response)
+
+        # 1. Try to classify intent WITHOUT calling OpenAI (saves ~1-2s)
+        intent_data = _try_bypass_ai(query)
+        ai_bypassed = intent_data is not None
+
+        # 1b. Fall back to AI for complex queries
+        if not intent_data:
+            intent_data = _analyze_search_intent(query)
+
         if not intent_data or 'google_books_query' not in intent_data:
             return Response({'metadata': None, 'results': [], 'has_more': False})
 
@@ -190,7 +279,13 @@ class AISearchView(APIView):
 
         # Determine language: explicit param > AI-detected > 'all'
         ai_lang = intent_data.get('language_filter', 'all')
-        effective_lang = lang if lang in _VALID_LANGUAGES else (ai_lang if ai_lang in _VALID_LANGUAGES else 'all')
+        # User's explicit filter ALWAYS takes priority over AI detection
+        if lang and lang in _VALID_LANGUAGES:
+            effective_lang = lang
+        elif ai_lang and ai_lang in _VALID_LANGUAGES:
+            effective_lang = ai_lang
+        else:
+            effective_lang = 'all'
 
         # 1.5 Local search in our community catalog
         from django.db.models import Q
@@ -214,7 +309,7 @@ class AISearchView(APIView):
                     'categories': lb.categories,
                     'isbn': lb.isbn,
                     'page_count': lb.page_count,
-                    'total_chapters': max(1, lb.page_count // 10) if lb.page_count else 10,
+                    'total_chapters': None,  # Let user set chapters
                     'language': '',
                 })
 
@@ -239,8 +334,13 @@ class AISearchView(APIView):
         # Check if there might be more results
         has_more = len(books) >= 15  # If we got at least 15 after dedup, there's likely more
 
-        return Response({
+        response_data = {
             'metadata': metadata,
             'results': final_results,
             'has_more': has_more,
-        })
+        }
+
+        # Cache the response for future identical queries
+        _cache_set(cache_key, response_data)
+
+        return Response(response_data)

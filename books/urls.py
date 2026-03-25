@@ -32,6 +32,8 @@ router.register(r'challenges', ReadingChallengeViewSet, basename='readingchallen
 router.register(r'suggest-similar', SuggestSimilarView, basename='suggestsimilar')
 
 urlpatterns = [
+    # Explicit paths MUST come before router.urls so they take priority
+    # (otherwise router's 'authors/' pattern intercepts 'authors/auto-merge/' and returns 405)
     path('authors/dedup/', AuthorDedupView.as_view(), name='author-dedup'),
     path('authors/auto-merge/', AutoMergeAuthorsView.as_view(), name='author-auto-merge'),
     path('recommendations/', BookRecommendationsView.as_view(), name='book-recommendations'),
@@ -47,13 +49,17 @@ urlpatterns = [
     path('follow-author/', FollowAuthorView.as_view(), name='follow-author'),
     path('seed-authors/', SeedAuthorsView.as_view(), name='seed-authors'),
     path('public-library/<int:user_id>/', PublicLibraryView.as_view(), name='public-library'),
+    # Admin author management
     path('admin-authors/', AdminAuthorsListView.as_view(), name='admin-authors-list'),
     path('admin-authors/<int:pk>/', AdminAuthorDetailView.as_view(), name='admin-author-detail'),
     path('admin-authors/<int:pk>/enrich/', AdminAuthorEnrichView.as_view(), name='admin-author-enrich'),
     path('admin-authors/<int:pk>/photo/', AdminAuthorPhotoView.as_view(), name='admin-author-photo'),
     path('admin-authors/<int:pk>/works/', AdminAuthorWorkView.as_view(), name='admin-author-works'),
+    # Admin web panel
     path('admin-panel/', AdminPanelView.as_view(), name='admin-panel'),
+    # Bulk library import
     path('bulk-import/', BulkLibraryImportView.as_view(), name='bulk-import'),
+    # Fix missing covers
     path('fix-covers/', FixMissingCoversView.as_view(), name='fix-covers'),
     path('', include(router.urls)),
 ]

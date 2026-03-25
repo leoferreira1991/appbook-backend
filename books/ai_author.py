@@ -5,6 +5,8 @@ from rest_framework.permissions import IsAuthenticated
 import json
 import requests as http_requests
 from openai import OpenAI
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from difflib import SequenceMatcher
 
 from .models import CachedAuthor, CachedAuthorWork
 
@@ -32,85 +34,91 @@ _AUTHOR_PROFILE_SCHEMA = """{
 _WIKI_HEADERS = {'User-Agent': 'AppBook/1.0 (admin@appbook.com)'}
 
 
-def _fetch_wikipedia_bibliography(author_name: str) -> str:
-    """Fetch bibliography text from Wikipedia (ES + EN).
-    
-    Tries:
-    1. Dedicated bibliography page (e.g., 'Agatha Christie bibliography')
-       → fetches each section as wikitext for maximum data
-    2. Bibliography/Obras section from the author's main page
-    
-    Returns wikitext/plain text of the bibliography, or empty string if not found.
-    """
+def _fetch_wikipedia_for_lang(author_name: str, lang: str, bib_suffix: str) -> list:
+    """Fetch bibliography text from Wikipedia for a single language. Returns list of text fragments."""
     texts = []
-    
     bib_keywords = ['novels', 'bibliography', 'works', 'short fiction', 'stage works',
                     'plays', 'collections', 'poetry', 'miscellany', 'publications',
                     'bibliografía', 'obras', 'novelas', 'publicaciones', 'cuentos', 'teatro']
     skip_keywords = ['notes', 'references', 'sources', 'see also', 'external', 'notas',
                      'referencias', 'véase', 'enlaces']
-    
-    for lang, bib_suffix in [('en', ' bibliography'), ('es', '')]:
-        api_url = f'https://{lang}.wikipedia.org/w/api.php'
-        
-        try:
-            # Try 1: Dedicated bibliography page — fetch ALL sections as wikitext
-            bib_page = f'{author_name}{bib_suffix}'
-            r = http_requests.get(api_url, params={
-                'action': 'parse', 'page': bib_page,
+    api_url = f'https://{lang}.wikipedia.org/w/api.php'
+
+    try:
+        # Try 1: Dedicated bibliography page
+        bib_page = f'{author_name}{bib_suffix}'
+        r = http_requests.get(api_url, params={
+            'action': 'parse', 'page': bib_page,
+            'prop': 'sections', 'format': 'json'
+        }, headers=_WIKI_HEADERS, timeout=8)
+        parse_data = r.json().get('parse', {})
+
+        if parse_data:
+            sections = parse_data.get('sections', [])
+            for section in sections:
+                section_name = section.get('line', '').lower()
+                if any(kw in section_name for kw in skip_keywords):
+                    continue
+                if any(kw in section_name for kw in bib_keywords) or section.get('level') == '2':
+                    r2 = http_requests.get(api_url, params={
+                        'action': 'parse', 'page': bib_page,
+                        'section': section['index'],
+                        'prop': 'wikitext', 'format': 'json'
+                    }, headers=_WIKI_HEADERS, timeout=8)
+                    wikitext = r2.json().get('parse', {}).get('wikitext', {}).get('*', '')
+                    if wikitext and len(wikitext) > 50:
+                        texts.append(f'[{lang.upper()} - {bib_page} - {section["line"]}]\n{wikitext}')
+
+        # Try 2: Author's main page — bibliography/obras section
+        r3 = http_requests.get(api_url, params={
+            'action': 'query', 'list': 'search',
+            'srsearch': author_name, 'format': 'json', 'srlimit': 1
+        }, headers=_WIKI_HEADERS, timeout=8)
+        results = r3.json().get('query', {}).get('search', [])
+        if results:
+            main_page = results[0]['title']
+            r4 = http_requests.get(api_url, params={
+                'action': 'parse', 'page': main_page,
                 'prop': 'sections', 'format': 'json'
-            }, headers=_WIKI_HEADERS, timeout=10)
-            parse_data = r.json().get('parse', {})
-            
-            if parse_data:  # Page exists
-                sections = parse_data.get('sections', [])
-                for section in sections:
-                    section_name = section.get('line', '').lower()
-                    # Skip non-bibliography sections
-                    if any(kw in section_name for kw in skip_keywords):
-                        continue
-                    # Include bibliography-related sections
-                    if any(kw in section_name for kw in bib_keywords) or section.get('level') == '2':
-                        r2 = http_requests.get(api_url, params={
-                            'action': 'parse', 'page': bib_page,
-                            'section': section['index'],
-                            'prop': 'wikitext', 'format': 'json'
-                        }, headers=_WIKI_HEADERS, timeout=10)
-                        wikitext = r2.json().get('parse', {}).get('wikitext', {}).get('*', '')
-                        if wikitext and len(wikitext) > 50:
-                            texts.append(f'[{lang.upper()} - {bib_page} - {section["line"]}]\n{wikitext}')
-            
-            # Try 2: Author's main page — bibliography/obras section
-            r3 = http_requests.get(api_url, params={
-                'action': 'query', 'list': 'search',
-                'srsearch': author_name, 'format': 'json', 'srlimit': 1
-            }, headers=_WIKI_HEADERS, timeout=10)
-            results = r3.json().get('query', {}).get('search', [])
-            if results:
-                main_page = results[0]['title']
-                r4 = http_requests.get(api_url, params={
-                    'action': 'parse', 'page': main_page,
-                    'prop': 'sections', 'format': 'json'
-                }, headers=_WIKI_HEADERS, timeout=10)
-                sections = r4.json().get('parse', {}).get('sections', [])
-                
-                for section in sections:
-                    section_name = section.get('line', '').lower()
-                    if any(kw in section_name for kw in bib_keywords):
-                        r5 = http_requests.get(api_url, params={
-                            'action': 'parse', 'page': main_page,
-                            'section': section['index'],
-                            'prop': 'wikitext', 'format': 'json'
-                        }, headers=_WIKI_HEADERS, timeout=10)
-                        wikitext = r5.json().get('parse', {}).get('wikitext', {}).get('*', '')
-                        if wikitext and len(wikitext) > 100:
-                            texts.append(f'[{lang.upper()} - {main_page} - {section["line"]}]\n{wikitext}')
-        except Exception as e:
-            print(f"  [Wikipedia] Error fetching {lang}: {e}")
-            continue
-    
-    combined = '\n\n'.join(texts)
-    # Allow up to 30000 chars for rich bibliography data
+            }, headers=_WIKI_HEADERS, timeout=8)
+            sections = r4.json().get('parse', {}).get('sections', [])
+
+            for section in sections:
+                section_name = section.get('line', '').lower()
+                if any(kw in section_name for kw in bib_keywords):
+                    r5 = http_requests.get(api_url, params={
+                        'action': 'parse', 'page': main_page,
+                        'section': section['index'],
+                        'prop': 'wikitext', 'format': 'json'
+                    }, headers=_WIKI_HEADERS, timeout=8)
+                    wikitext = r5.json().get('parse', {}).get('wikitext', {}).get('*', '')
+                    if wikitext and len(wikitext) > 100:
+                        texts.append(f'[{lang.upper()} - {main_page} - {section["line"]}]\n{wikitext}')
+    except Exception as e:
+        print(f"  [Wikipedia] Error fetching {lang}: {e}")
+
+    return texts
+
+
+def _fetch_wikipedia_bibliography(author_name: str) -> str:
+    """Fetch bibliography text from Wikipedia (ES + EN) IN PARALLEL.
+
+    Both language fetches run concurrently, cutting total wait time roughly in half.
+    """
+    all_texts = []
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        futures = {
+            executor.submit(_fetch_wikipedia_for_lang, author_name, 'en', ' bibliography'): 'en',
+            executor.submit(_fetch_wikipedia_for_lang, author_name, 'es', ''): 'es',
+        }
+        for future in as_completed(futures):
+            try:
+                all_texts.extend(future.result())
+            except Exception as e:
+                print(f"  [Wikipedia] Thread error for {futures[future]}: {e}")
+
+    combined = '\n\n'.join(all_texts)
     if len(combined) > 30000:
         combined = combined[:30000] + '\n... (truncated)'
     return combined
@@ -237,11 +245,21 @@ def _generate_author_profile(author_name: str) -> dict:
                 all_works[normalize(title)] = w
         
         print(f"  [{author_name}] Merged: {wiki_count} from Wikipedia + {len(all_works) - wiki_count} new from GPT = {len(all_works)} total")
-        
+
         # ── Step 2: Iterative loop to fetch remaining works ──
-        MAX_ITERATIONS = 4
-        MIN_NEW_WORKS = 1  # Stop only when GPT returns 0 new works
-        
+        # Reduced from 4 to 2 max iterations — extra rounds rarely add real works
+        # and significantly increase latency (each round = 1.5-3s GPT call)
+        MAX_ITERATIONS = 2
+        MIN_NEW_WORKS = 2  # Stop if fewer than 2 new works (likely hallucinating)
+
+        # Skip iterations entirely if we already have a rich bibliography from Wikipedia
+        if len(all_works) >= 30:
+            MAX_ITERATIONS = 0
+            print(f"  [{author_name}] Skipping iterations — already have {len(all_works)} works from Wikipedia+GPT")
+        elif len(all_works) >= 15:
+            MAX_ITERATIONS = 1
+            print(f"  [{author_name}] Reducing to 1 iteration — already have {len(all_works)} works")
+
         for iteration in range(MAX_ITERATIONS):
             known_titles = [w.get('title', '') for w in all_works.values()]
             
@@ -401,8 +419,12 @@ class AIAuthorProfileView(APIView):
     permission_classes = [IsAuthenticated]
 
     def _find_cached(self, name):
-        """Try to find a cached author, with flexible name matching."""
-        # 1. Exact case-insensitive match
+        """Try to find a cached author, with safe name matching.
+
+        Uses SequenceMatcher similarity instead of icontains to prevent
+        false positives (e.g., searching "King" matching "Stephen King").
+        """
+        # 1. Exact case-insensitive match (fastest path)
         try:
             cached = CachedAuthor.objects.get(name__iexact=name)
             if cached.works.exists():
@@ -410,17 +432,32 @@ class AIAuthorProfileView(APIView):
         except CachedAuthor.DoesNotExist:
             pass
 
-        # 2. Partial match: "Stephen King" matches "Stephen Edwin King"
-        #    Split search name into parts and check if all parts are in the cached name
-        name_parts = name.lower().split()
+        # 2. Fuzzy match using string similarity (safer than icontains)
+        #    Only consider candidates where ALL name parts appear
+        name_lower = name.lower().strip()
+        name_parts = name_lower.split()
+
+        # Skip fuzzy matching for single short words (too ambiguous)
+        if len(name_parts) == 1 and len(name_lower) < 6:
+            return None
+
         candidates = CachedAuthor.objects.all()
         for part in name_parts:
-            candidates = candidates.filter(name__icontains=part)
-        
+            if len(part) >= 3:  # Only filter on parts with 3+ chars
+                candidates = candidates.filter(name__icontains=part)
+
         if candidates.exists():
-            # Return the best match (prefer shortest name = closest match)
-            best = min(candidates, key=lambda a: len(a.name))
-            if best.works.exists():
+            # Score candidates by similarity ratio
+            best = None
+            best_score = 0.0
+            for candidate in candidates[:20]:  # Limit to prevent scanning entire table
+                score = SequenceMatcher(None, name_lower, candidate.name.lower()).ratio()
+                if score > best_score and candidate.works.exists():
+                    best_score = score
+                    best = candidate
+
+            # Only return if similarity is high enough (>= 0.7)
+            if best and best_score >= 0.7:
                 return best
 
         return None

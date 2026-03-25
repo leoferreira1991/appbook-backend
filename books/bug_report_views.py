@@ -114,7 +114,7 @@ class AdminBugReportsView(APIView):
     
     def get(self, request):
         key = request.query_params.get('key', '')
-        if key != 'appbook-admin-2026':
+        if key != settings.APPBOOK_ADMIN_KEY:
             return Response({'error': 'Invalid key'}, status=403)
         
         reports = BugReport.objects.all().order_by('-created_at')
@@ -145,7 +145,7 @@ class AIStatusView(APIView):
     
     def get(self, request):
         key = request.query_params.get('key', '')
-        if key != 'appbook-admin-2026':
+        if key != settings.APPBOOK_ADMIN_KEY:
             return Response({'error': 'Invalid key'}, status=403)
         
         openai_key = settings.OPENAI_API_KEY

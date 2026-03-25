@@ -140,7 +140,47 @@ class BookRecommendationsView(APIView):
                                 valid_recs.append(rec)
                             # else: discard the misattributed book
                         section['recommendations'] = valid_recs
+            # Post-filter: remove books already in user's library (fuzzy match)
+            if data.get('sections') and owned_titles:
+                owned_lower = set()
+                for ot in owned_titles:
+                    # Extract just the title from "'Title' de Author" format
+                    try:
+                        t = ot.split("'")[1].lower().strip()
+                        owned_lower.add(t)
+                    except IndexError:
+                        pass
+                for section in data['sections']:
+                    filtered = []
+                    for rec in section.get('recommendations', []):
+                        rec_title = (rec.get('title') or '').lower().strip()
+                        # Exact match or substring match (catches slight variations)
+                        is_owned = any(
+                            rec_title == ot or ot in rec_title or rec_title in ot
+                            for ot in owned_lower
+                        )
+                        if not is_owned:
+                            filtered.append(rec)
+                    section['recommendations'] = filtered
             if data.get('sections'):
+                # Enrich recommendations with cover URLs from Google Books
+                import requests
+                for section in data['sections']:
+                    for rec in section.get('recommendations', []):
+                        if not rec.get('cover_url'):
+                            try:
+                                q = f"intitle:{rec.get('title','')}+inauthor:{rec.get('author','')}"
+                                gb_resp = requests.get(
+                                    f"https://www.googleapis.com/books/v1/volumes?q={q}&maxResults=1&fields=items(volumeInfo/imageLinks)",
+                                    timeout=3
+                                )
+                                if gb_resp.status_code == 200:
+                                    items = gb_resp.json().get('items', [])
+                                    if items:
+                                        links = items[0].get('volumeInfo', {}).get('imageLinks', {})
+                                        rec['cover_url'] = links.get('thumbnail', links.get('smallThumbnail', ''))
+                            except Exception:
+                                rec['cover_url'] = ''
                 cache_obj.data = data
                 cache_obj.updated_at = timezone.now()
                 cache_obj.save()

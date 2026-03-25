@@ -2,12 +2,13 @@
 Admin endpoint to bulk-populate a user's library from a pre-defined book list.
 Triggered via POST with admin key. Skips books already in the library.
 """
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .models import UserBookExternal
 
-ADMIN_KEY = 'appbook-admin-2026'
+ADMIN_KEY = settings.APPBOOK_ADMIN_KEY
 
 # ═══════════════════════════════════════════════════════════════════════════
 # COMPLETE BOOK LIST — parsed from user's reading list
