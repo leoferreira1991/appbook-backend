@@ -222,7 +222,7 @@ FAMOUS_AUTHORS = [
     "Emilio De Marchi", "Giovanni Verga", "Luigi Capuana",
     "Grazia Deledda", "Matilde Serao", "Armando Trovajoli",
 
-    # ──┈ Japanese-language authors (~35) ─────────────────────────────
+    # ─── Japanese-language authors (~35) ─────────────────────────────
     "Haruki Murakami", "Yukio Mishima", "Banana Yoshimoto",
     "Kenzaburō Ōe", "Natsume Sōseki", "Ryūnosuke Akutagawa",
     "Keigo Higashino", "Yōko Ogawa", "Junichirō Tanizaki",
@@ -271,7 +271,7 @@ FAMOUS_AUTHORS = [
     "Qiu Miaofeng", "Feridun Zaimoglu",
     "Khair al-Din al-Tunisi", "Jamal al-Din al-Afghani",
 
-    # ──┈ Contemporary bestsellers & trending (~90) ───────────────────
+    # ─── Contemporary bestsellers & trending (~90) ───────────────────
     "Rebecca Yarros", "Ana Huang", "Tessa Bailey", "Christina Lauren",
     "Ruth Ware", "Lucy Foley", "Alex Michaelides",
     "A.J. Finn", "T.J. Klune", "Travis Baldree",
@@ -297,7 +297,134 @@ FAMOUS_AUTHORS = [
     "Jennifer L. Armentrout",
     "Kevin J. Anderson", "Kristine Kathryn Rusch", "K.A. Applegate",
 
-    # ─── Self-help & non-fiction (~60) ─────────────�uthor = _cache_author_profile(profile_data)
+    # ─── Self-help & non-fiction (~60) ────────────────────────────────────
+    "Dale Carnegie", "Napoleon Hill", "Robert Kiyosaki",
+    "Brené Brown", "Malcolm Gladwell", "Yuval Noah Harari",
+    "Daniel Kahneman", "James Clear", "Mark Manson",
+    "Ryan Holiday", "Cal Newport", "Nassim Nicholas Taleb",
+    "Viktor Frankl", "Eckhart Tolle", "Deepak Chopra",
+    "Wayne Dyer", "Oprah Winfrey", "Gary Vaynerchuk",
+    "Tim Ferriss", "Seth Godin", "Tony Robbins",
+    "Simon Sinek", "Chris Anderson", "Daniel Pink",
+    "Susan Cain", "Amy Cuddy", "Arianna Huffington",
+    "Sheryl Sandberg", "Gloria Steinem",
+    "Betty Friedan", "Simone de Beauvoir", "Germaine Greer",
+    "Carol Dweck", "Angela Duckworth", "Jonathan Haidt",
+    "Steven D. Levitt", "Stephen J. Dubner",
+    "Jared Diamond", "Noah Harari",
+    "Daniel Goleman", "Peter Drucker", "Jim Collins",
+    "W. Edwards Deming", "Tom Peters", "Clayton Christensen",
+    "Michael Porter", "Herb Kelleher", "Jack Welch",
+
+    # ─── Science Fiction & Fantasy greats (~80) ─────────────────────
+    "Arthur C. Clarke", "Robert A. Heinlein", "Stanislaw Lem",
+    "China Miéville", "Joe Abercrombie", "Mark Lawrence", "Brent Weeks",
+    "Peter V. Brett", "Raymond E. Feist", "David Eddings",
+    "Terry Brooks", "Tad Williams", "R.A. Salvatore",
+    "Margaret Weis", "Tracy Hickman", "Karen Traviss",
+    "Seanan McGuire", "Garth Nix",
+    "Neil Gaiman", "Terry Pratchett", "Douglas Adams", "Robert Jordan",
+    "James S.A. Corey", "Andy Weir", "Blake Crouch", "Vernor Vinge",
+    "Greg Egan", "Karl Schroeder", "Alastair Reynolds",
+    "Peter F. Hamilton", "Richard K. Morgan",
+    "Linda Nagata", "Mary Robinette Kowal",
+    "Nnedi Okorafor", "Nini Tee",
+    "Ann Leckie", "Fonda Lee", "Marie Lu",
+    "Clive Barker",
+    "Adam Nevill", "Darcy Coates",
+    "Kameron Hurley", "Nick Harkaway", "Charles Stross",
+    "Ken MacLeod", "Iain M. Banks", "Linda Nagata",
+    "Elizabeth Bear", "Yoon Ha Lee", "K.J. Parker",
+
+    # ─── Horror & Thriller (~50) ──────────────────────────────────────
+    "Thomas Harris", "Peter Straub", "Richard Matheson", "Robert Bloch",
+    "Ira Levin", "Joe Hill", "Grady Hendrix",
+    "Adam Nevill", "Darcy Coates", "Gillian Flynn",
+    "Paula Hawkins", "Tana French", "Denise Mina",
+    "Yrsa Sigurdardottir", "Liza Marklund",
+    "Karin Fossum", "K.A. Tucker",
+    "Jessica Egan", "Kate Brian", "Gilly Macmillan",
+    "Shari Lapena", "Mary Higgins Clark", "V.C. Andrews",
+    "John Saul", "Bentley Little", "Edward Lee",
+    "Michael Showalter", "Paul Kane", "Keija Parssinen",
+    "Jay Asher", "Jay Kristoff",
+    "Gemma Files", "Livia Llewellyn", "Christina Henry",
+    "Paul Finch", "Kelley Armstrong", "Carole Loveland",
+    "Sara Shepard", "Aidan Chambers", "Paula Danziger",
+    "David Baldacci", "Harlan Coben",
+
+    # ─── Children's & YA (~50) ──────────────────────────────────────
+    "Enid Blyton", "Dr. Seuss", "Maurice Sendak",
+    "Beverly Cleary", "Lois Lowry", "Madeleine L'Engle",
+    "Christopher Paul Curtis", "Louis Sachar",
+    "Sharon Creech", "Jacqueline Wilson", "David Almond",
+    "Michael Morpurgo", "David Walliams", "Andy Griffiths",
+    "Jeff Kinney", "Dav Pilkey", "R.L. Stine",
+    "Judy Blume", "James Dashner",
+    "N.K. Jemisin", "John Green",
+    "Becky Albertalli", "Angie Thomas",
+    "Jason Reynolds", "Nicola Yoon",
+    "Holly Jackson", "Courtney Summers", "Jennifer Niven",
+    "Kendare Blake", "Stephanie Garber",
+    "V.E. Schwab", "Maggie Stiefvater", "Stephanie Perkins",
+    "Kate DiCamillo", "Lemony Snicket", "Brandon Mull",
+    "Cinda Williams Chima", "Christopher Paolini",
+
+    # ─── Classic & Ancient Authors (~25) ─────────────────────────────
+    "Homero", "Virgilio", "Ovidio", "Sófocles", "Eurípides",
+    "Esquilo", "Aristófanes", "Platón", "Aristóteles",
+    "Sun Tzu", "Lao Tse", "Confucio", "Zhuangzi",
+    "Gautama Buddha", "Zoroaster", "Heraclitus", "Democritus",
+    "Epicurus", "Cicero", "Seneca", "Livy", "Tacitus",
+    "Apuleius", "Boethius", "Augustine", "Aquinas",
+]
+
+
+def _seed_worker():
+    """Background worker that generates and caches author profiles."""
+    import time
+
+    # Close stale DB connections from previous requests
+    django_db.close_old_connections()
+
+    # Deduplicate
+    unique = list(dict.fromkeys(FAMOUS_AUTHORS))
+
+    # Filter out already-cached authors (only skip if they have enough works)
+    to_process = []
+    for name in unique:
+        try:
+            cached = CachedAuthor.objects.get(name__iexact=name)
+            # Only skip if the author has a substantial bibliography (15+ works)
+            # Authors with fewer works may have been cached before the improved GPT prompt
+            if cached.works.count() >= 15:
+                continue
+        except CachedAuthor.DoesNotExist:
+            pass
+        to_process.append(name)
+
+    _seeding_state['total'] = len(to_process)
+    _seeding_state['processed'] = 0
+    _seeding_state['errors'] = 0
+    _seeding_state['completed'] = []
+
+    for i, author_name in enumerate(to_process):
+        if not _seeding_state['running']:
+            break  # Allow stopping
+
+        _seeding_state['current'] = author_name
+        try:
+            # Refresh DB connections periodically to prevent stale connections
+            if i % 5 == 0:
+                django_db.close_old_connections()
+
+            profile_data = _generate_author_profile(author_name)
+            if profile_data and 'name' in profile_data:
+                # CRITICAL: Force the name to match our list to prevent duplicates
+                profile_data['name'] = author_name
+                photo_url = _get_author_photo_url(profile_data.get('name', author_name))
+                profile_data['photo_url'] = photo_url
+                author = _cache_author_profile(profile_data)
                 works_count = author.works.count()
                 _seeding_state['completed'].append(f"✅ {author.name} ({works_count} obras)")
             else:
