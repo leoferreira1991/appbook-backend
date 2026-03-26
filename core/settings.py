@@ -186,7 +186,10 @@ SIMPLE_JWT = {
 }
 
 # Google Auth
-GOOGLE_WEB_CLIENT_ID = os.environ.get('GOOGLE_WEB_CLIENT_ID', '')
+GOOGLE_WEB_CLIENT_ID = (
+    os.environ.get('GOOGLE_WEB_CLIENT_ID', '')
+    or os.environ.get('GOOGLE_OAUTH_CLIENT_ID', '')
+)
 if not GOOGLE_WEB_CLIENT_ID and not DEBUG:
     print("WARNING: GOOGLE_WEB_CLIENT_ID not set in production!")
 
