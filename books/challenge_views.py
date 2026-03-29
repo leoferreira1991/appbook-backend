@@ -1,4 +1,4 @@
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, parsers
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -14,12 +14,26 @@ from django.conf import settings
 class ReadingChallengeViewSet(viewsets.ModelViewSet):
     serializer_class = ReadingChallengeSerializer
     permission_classes = [IsAuthenticated]
+    parser_classes = [parsers.MultiPartParser, parsers.JSONParser, parsers.FormParser]
 
     def get_queryset(self):
         return ReadingChallenge.objects.filter(user=self.request.user).order_by('-created_at')
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+    def partial_update(self, request, *args, **kwargs):
+        """Override to add debug logging for cover upload issues."""
+        try:
+            return super().partial_update(request, *args, **kwargs)
+        except Exception as e:
+            import traceback
+            print(f"Challenge PATCH error: {e}")
+            traceback.print_exc()
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
     @action(detail=True, methods=['post'])
     def log(self, request, pk=None):
