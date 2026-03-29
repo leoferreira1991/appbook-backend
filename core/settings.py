@@ -216,6 +216,9 @@ CLOUDINARY_STORAGE = {
     'API_SECRET': _CLOUDINARY_SECRET,
 }
 
+# Use Cloudinary as default file storage so CloudinaryField uploads work via DRF
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
 # ─── AI & External APIs ─────────────────────────────────────────────────
 # OpenAI — for personalized book recommendations
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
