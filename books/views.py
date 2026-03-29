@@ -122,6 +122,19 @@ class UserBookExternalViewSet(viewsets.ModelViewSet):
             qs = qs.filter(status=status)
         return qs
 
+    def partial_update(self, request, *args, **kwargs):
+        """Override to add debug logging for cover upload issues."""
+        try:
+            return super().partial_update(request, *args, **kwargs)
+        except Exception as e:
+            import traceback
+            print(f"UserBookExternal PATCH error: {e}")
+            traceback.print_exc()
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
     def perform_create(self, serializer):
         print(f"--- ADDING EXTERNAL BOOK ---")
         ol_key = serializer.validated_data.get('ol_key', '')

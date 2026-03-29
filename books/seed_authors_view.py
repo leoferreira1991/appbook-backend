@@ -297,7 +297,7 @@ FAMOUS_AUTHORS = [
     "Jennifer L. Armentrout",
     "Kevin J. Anderson", "Kristine Kathryn Rusch", "K.A. Applegate",
 
-    # ─── Self-help & non-fiction (~60) ────────────────────────────────────
+    # ─── Self-help & non-fiction (~60) ────────────────────────────────
     "Dale Carnegie", "Napoleon Hill", "Robert Kiyosaki",
     "Brené Brown", "Malcolm Gladwell", "Yuval Noah Harari",
     "Daniel Kahneman", "James Clear", "Mark Manson",
